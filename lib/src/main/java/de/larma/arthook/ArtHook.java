@@ -48,7 +48,7 @@ public class ArtHook {
         }
     }
 
-    private static void handleHookPage(ArtMethod original, ArtMethod replacement,
+    private static HookPage handleHookPage(ArtMethod original, ArtMethod replacement,
             ArtMethod backup) {
         long originalEntryPoint = INSTRUCTION_SET_HELPER.toMem(
                 original.getEntryPointFromQuickCompiledCode());
@@ -60,6 +60,7 @@ public class ArtHook {
         HookPage page = pages.get(originalEntryPoint);
         page.addHook(new HookPage.Hook(original, replacement, backup));
         page.update();
+        return page;
     }
 
     public static void hook(Class clazz) {
@@ -122,7 +123,7 @@ public class ArtHook {
         ArtMethod original = ArtMethod.of(originalMethod);
         ArtMethod replacement = ArtMethod.of(replacementMethod);
 
-        handleHookPage(original, replacement, ArtMethod.of(backupMethod));
+        HookPage page = handleHookPage(original, replacement, ArtMethod.of(backupMethod));
 
         ArtMethod backArt = original.clone();
         long originalEntryPoint = INSTRUCTION_SET_HELPER.toMem(backArt
@@ -134,6 +135,7 @@ public class ArtHook {
         backupMethod = backArt.newMethod();
         backupMethod.setAccessible(true);
         OriginalMethod.store(originalMethod, backupMethod, backupIdentifier);
+        page.activate();
         return new OriginalMethod(backupMethod);
     }
 

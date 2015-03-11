@@ -140,8 +140,6 @@ public class HookPage {
 
     public void update() {
         create();
-        Native.munprotect_verbose(originalAddress, instructionHelper.sizeOfDirectJump());
-        Native.memput_verbose(instructionHelper.createDirectJump(getCallHook()), originalAddress);
         for (Hook hook : hooks) {
             if (hook.backup != null) {
                 long backupAddr = instructionHelper.toMem(
@@ -151,6 +149,11 @@ public class HookPage {
                         getCallOriginal()), backupAddr);
             }
         }
+    }
+
+    public void activate() {
+        Native.munprotect_verbose(originalAddress, instructionHelper.sizeOfDirectJump());
+        Native.memput_verbose(instructionHelper.createDirectJump(getCallHook()), originalAddress);
     }
 
     @Override
