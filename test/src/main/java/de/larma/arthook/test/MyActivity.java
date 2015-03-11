@@ -19,14 +19,16 @@ public class MyActivity extends Activity {
             //ArtHook.about(System.class.getDeclaredMethod("arraycopy", Object.class, int.class, Object.class, int.class, int.class));
             //ArtHook.backupMethods.get(new MethodInfo(Activity.class, "setContentView", int.class)).invoke(this, R.layout.activity_my);
         } catch (Exception e) {
-            Log.d(TAG, "blub", e);
+            Log.d(TAG, "Catching exception");
+            Log.d(TAG, "e: ", e);
         }
     }
 
     @Override
     public void setContentView(int layoutResID) {
-        Log.d(TAG, "my setContentView: "+layoutResID);
+        Log.d(TAG, "before Activity.setContentView");
         super.setContentView(layoutResID);
+        //Log.d(TAG, "after Activity.setContentView");
     }
 
     @Override

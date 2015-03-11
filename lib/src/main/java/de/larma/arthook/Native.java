@@ -69,4 +69,23 @@ public final class Native {
         Log.d(TAG, "Disabling mprotect from " + DebugHelper.intHex(addr));
         munprotect(addr, len);
     }
+
+    public static native void ptrace(int pid);
+
+    public static void ptrace_verbose(int pid) {
+        Log.d(TAG, "ptrace'ing " + pid);
+        ptrace(pid);
+    }
+
+    private static Boolean sixtyFour;
+
+    public static boolean is64Bit() {
+        if (sixtyFour == null)
+            try {
+                sixtyFour = (Boolean) Class.forName("dalvik.system.VMRuntime").getDeclaredMethod("is64Bit").invoke(Class.forName("dalvik.system.VMRuntime").getDeclaredMethod("getRuntime").invoke(null));
+            } catch (Exception e) {
+                throw new RuntimeException("Can't determine int size number!", e);
+            }
+        return sixtyFour;
+    }
 }

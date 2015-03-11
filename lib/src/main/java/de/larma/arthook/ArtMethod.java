@@ -20,6 +20,11 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+
+import static android.os.Build.VERSION.SDK_INT;
+import static android.os.Build.VERSION_CODES.LOLLIPOP_MR1;
 
 /**
  * A helper class to access {@link java.lang.reflect.ArtMethod} using reflection.
@@ -35,8 +40,15 @@ public class ArtMethod {
     private static final String FIELD_ACCESS_FLAGS = "accessFlags";
     private static final String FIELD_DEX_METHOD_INDEX = "dexMethodIndex";
     private static final String FIELD_ENTRY_POINT_FROM_JNI = "entryPointFromJni";
+    private static final int FIELD_ENTRY_POINT_FROM_JNI_MR1_PRIV_INDEX = 1;
     private static final String FIELD_ENTRY_POINT_FROM_INTERPRETER = "entryPointFromInterpreter";
+    private static final int FIELD_ENTRY_POINT_FROM_INTERPRETER_MR1_PRIV_INDEX = 0;
     private static final String FIELD_ENTRY_POINT_FROM_QUICK_COMPILED_CODE = "entryPointFromQuickCompiledCode";
+    private static final int FIELD_ENTRY_POINT_FROM_QUICK_COMPILED_CODE_MR1_PRIV_INDEX = 2;
+
+    private static final int LOLLIPOP_MR1_PUB_FIELDS = 36;
+    private static final int LOLLIPOP_MR1_PRIV_FIELDS = Native.is64Bit() ? 24 : 12;
+    private static final int LOLLIPOP_MR1_OBJECT_SIZE = LOLLIPOP_MR1_PRIV_FIELDS + LOLLIPOP_MR1_PUB_FIELDS;
 
     private final Object artMethod;
 
@@ -83,16 +95,73 @@ public class ArtMethod {
     }
 
     private Object get(String name) {
+        if (SDK_INT >= LOLLIPOP_MR1) {
+            switch (name) {
+                case FIELD_ENTRY_POINT_FROM_INTERPRETER:
+                    return getMr1Priv(FIELD_ENTRY_POINT_FROM_INTERPRETER_MR1_PRIV_INDEX);
+                case FIELD_ENTRY_POINT_FROM_JNI:
+                    return getMr1Priv(FIELD_ENTRY_POINT_FROM_JNI_MR1_PRIV_INDEX);
+                case FIELD_ENTRY_POINT_FROM_QUICK_COMPILED_CODE:
+                    return getMr1Priv(FIELD_ENTRY_POINT_FROM_QUICK_COMPILED_CODE_MR1_PRIV_INDEX);
+            }
+        }
         return get(getField(name));
     }
 
+    private long getMr1Priv(int num) {
+        long objectAddress = Unsafe.getObjectAddress(artMethod);
+        int intSize = Native.is64Bit() ? 8 : 4;
+        byte[] bytes = Native.memget_verbose(objectAddress + LOLLIPOP_MR1_PUB_FIELDS + intSize * num, intSize);
+        if (Native.is64Bit()) {
+            return ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN).getLong();
+        } else {
+            return ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN).getInt();
+        }
+    }
+
     private void set(String name, Object value) {
+        if (SDK_INT >= LOLLIPOP_MR1) {
+            switch (name) {
+                case FIELD_ENTRY_POINT_FROM_INTERPRETER:
+                    setMr1Priv(FIELD_ENTRY_POINT_FROM_INTERPRETER_MR1_PRIV_INDEX, (Long) value);
+                    return;
+                case FIELD_ENTRY_POINT_FROM_JNI:
+                    setMr1Priv(FIELD_ENTRY_POINT_FROM_JNI_MR1_PRIV_INDEX, (Long) value);
+                    return;
+                case FIELD_ENTRY_POINT_FROM_QUICK_COMPILED_CODE:
+                    setMr1Priv(FIELD_ENTRY_POINT_FROM_QUICK_COMPILED_CODE_MR1_PRIV_INDEX, (Long) value);
+                    return;
+            }
+        }
         set(getField(name), value);
+    }
+
+    private void setMr1Priv(int num, long value) {
+        long objectAddress = Unsafe.getObjectAddress(artMethod);
+        int intSize = Native.is64Bit() ? 8 : 4;
+        byte[] bytes;
+        if (Native.is64Bit()) {
+            bytes = ByteBuffer.allocate(intSize).order(ByteOrder.LITTLE_ENDIAN).putLong(value).array();
+        } else {
+            bytes = ByteBuffer.allocate(intSize).order(ByteOrder.LITTLE_ENDIAN).putInt((int) value).array();
+        }
+        Native.memput_verbose(bytes, objectAddress + LOLLIPOP_MR1_PUB_FIELDS + intSize * num);
     }
 
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneDoesntDeclareCloneNotSupportedException"})
     public ArtMethod clone() {
         ArtMethod clone = new ArtMethod();
+        if (SDK_INT >= LOLLIPOP_MR1) {
+            long objectAddress = Unsafe.getObjectAddress(artMethod);
+            long map = Native.mmap_verbose(LOLLIPOP_MR1_OBJECT_SIZE);
+            Native.memcpy(objectAddress, map, LOLLIPOP_MR1_OBJECT_SIZE);
+            try {
+                long pointerOffset = Unsafe.objectFieldOffset(ArtMethod.class.getDeclaredField("artMethod"));
+                Unsafe.putLong(clone, pointerOffset, map);
+            } catch (NoSuchFieldException e) {
+                e.printStackTrace();
+            }
+        }
         writeTo(clone);
         return clone;
     }
@@ -113,6 +182,12 @@ public class ArtMethod {
             for (Field field : Class.forName(ART_METHOD_CLASS_NAME).getDeclaredFields()) {
                 field.setAccessible(true);
                 target.set(field, get(field));
+            }
+            if (SDK_INT >= LOLLIPOP_MR1) {
+                // Also write priv fields:
+                target.setEntryPointFromInterpreter(getEntryPointFromInterpreter());
+                target.setEntryPointFromJni(getEntryPointFromJni());
+                target.setEntryPointFromQuickCompiledCode(getEntryPointFromQuickCompiledCode());
             }
         } catch (ClassNotFoundException ignored) {
         }

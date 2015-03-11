@@ -19,7 +19,7 @@ android {
     defaultConfig {
         applicationId "de.larma.ahook.test"
         minSdkVersion 21
-        targetSdkVersion 21
+        targetSdkVersion 22
         versionCode 1
         versionName "1.0"
     }

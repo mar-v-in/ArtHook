@@ -51,6 +51,16 @@ public final class Unsafe {
     }
 
     @SuppressWarnings("unchecked")
+    public static long objectFieldOffset(Field field) {
+        try {
+            return (long) unsafeClass.getDeclaredMethod("objectFieldOffset", Field.class).invoke(unsafe, field);
+        } catch (Exception e) {
+            Log.w(TAG, e);
+            return 0;
+        }
+    }
+
+    @SuppressWarnings("unchecked")
     public static int getInt(Object array, long offset) {
         try {
             return (int) unsafeClass.getDeclaredMethod("getInt", Object.class, long.class).invoke(unsafe, array, offset);
@@ -70,10 +80,19 @@ public final class Unsafe {
         }
     }
 
+    @SuppressWarnings("unchecked")
+    public static void putLong(Object array, long offset, long value) {
+        try {
+            unsafeClass.getDeclaredMethod("putLong", Object.class, long.class, long.class).invoke(unsafe, array, offset, value);
+        } catch (Exception e) {
+            Log.w(TAG, e);
+        }
+    }
+
     public static long getObjectAddress(Object obj) {
         try {
             Object[] array = new Object[]{obj};
-            if ((boolean) Class.forName("dalvik.system.VMRuntime").getDeclaredMethod("is64Bit").invoke(Class.forName("dalvik.system.VMRuntime").getDeclaredMethod("getRuntime").invoke(null))) {
+            if (Native.is64Bit()) {
                 return getLong(array, arrayBaseOffset(Object[].class));
             } else {
                 return getInt(array, arrayBaseOffset(Object[].class));

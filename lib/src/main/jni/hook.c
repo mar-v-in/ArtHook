@@ -19,6 +19,7 @@
 #include <sys/mman.h>
 #include <errno.h>
 #include <unistd.h>
+#include <sys/ptrace.h>
 
 #define LOGV(...)  ((void)__android_log_print(ANDROID_LOG_VERBOSE, "ArtHook_native", __VA_ARGS__))
 
@@ -77,4 +78,8 @@ JNIEXPORT void JNICALL Java_de_larma_arthook_Native_munmap(JNIEnv *env, jclass _
     if (r == -1) {
         LOGV("munmap failed: %d",errno);
     }
+}
+
+JNIEXPORT void JNICALL Java_de_larma_arthook_Native_ptrace(JNIEnv* env, jclass _cls, jint pid) {
+    ptrace(PTRACE_ATTACH,(pid_t)pid,0,0);
 }

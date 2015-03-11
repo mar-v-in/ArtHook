@@ -36,6 +36,7 @@ public class MyApplication extends Application {
         } catch (Exception e) {
             Log.w(TAG, e);
         }
+
         try {
             Log.d("MyApplication", "Time:" + System.currentTimeMillis());
             Log.d("MyApplication", "BackupTime:" + OriginalMethod.byOriginal(System.class
@@ -43,6 +44,7 @@ public class MyApplication extends Application {
         } catch (NoSuchMethodException e) {
             Log.w(TAG, e);
         }
+
     }
 
     public void pieceGame() {
@@ -53,11 +55,13 @@ public class MyApplication extends Application {
      */
     @Hook("android.app.Activity->setContentView")
     public static void Activity_setContentView(Activity activity, int layoutResID) {
-        Log.d(TAG, "Now you see me");
+        Log.d(TAG, "before Original[Activity.setContentView]");
         OriginalMethod.by(new $() {}).invoke(activity, layoutResID);
+        //Log.d(TAG, "after Original[Activity.setContentView]");
         TextView text = ((TextView) activity.findViewById(R.id.helloWorldText));
         text.append("\n -- I am god");
         text.append("\n " + new Date().toString());
+        //Log.d(TAG, "end Hook[Activity.setContentView]");
     }
 
     /**
@@ -87,7 +91,7 @@ public class MyApplication extends Application {
     @Hook("java.lang.Class->getDeclaredMethod")
     @BackupIdentifier("Class_getDeclaredMethod")
     public static Method Class_getDeclaredMethod(Class cls, String name, Class[] params) {
-        Log.d(TAG, "I'm hooked in getDeclaredMethod");
+        Log.d(TAG, "I'm hooked in getDeclaredMethod: " + cls + " -> " + name);
         if (name.contains("War") || name.contains("war")) {
             Log.d(TAG, "make piece not war!"); // This is a political statement!
             name = name.replace("War", "Piece").replace("war", "piece");
