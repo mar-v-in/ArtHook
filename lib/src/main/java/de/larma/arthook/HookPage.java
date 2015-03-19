@@ -144,7 +144,7 @@ public class HookPage {
             if (hook.backup != null) {
                 long backupAddr = instructionHelper.toMem(
                         hook.backup.getEntryPointFromQuickCompiledCode());
-                Native.munprotect_verbose(backupAddr, instructionHelper.sizeOfDirectJump());
+                Native.munprotect_verbose(backupAddr, instructionHelper.sizeOfArtJump());
                 Native.memput_verbose(instructionHelper.createArtJump(hook.src.getAddress(),
                         getCallOriginal()), backupAddr);
             }

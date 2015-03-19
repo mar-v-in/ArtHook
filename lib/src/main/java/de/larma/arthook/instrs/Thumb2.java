@@ -66,6 +66,11 @@ public class Thumb2 extends InstructionHelper {
     }
 
     @Override
+    public int sizeOfArtJump() {
+        return 16;
+    }
+
+    @Override
     public byte[] createArtJump(long artMethodAddress, long jumpTarget) {
         byte[] instructions = new byte[] {
                 (byte) 0xdf, (byte) 0xf8, 0x04, 0x00,           // ldr r0, [pc, #4]

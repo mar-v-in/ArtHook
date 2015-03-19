@@ -66,6 +66,11 @@ public class Arm32 extends InstructionHelper {
     }
 
     @Override
+    public int sizeOfArtJump() {
+        return 16;
+    }
+
+    @Override
     @Deprecated
     public byte[] createArtJump(long artMethodAddress, long jumpTarget) {
         byte[] instructions = new byte[] {
