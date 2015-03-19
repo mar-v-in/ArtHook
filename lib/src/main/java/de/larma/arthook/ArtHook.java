@@ -27,10 +27,13 @@ import de.larma.arthook.instrs.Arm32;
 import de.larma.arthook.instrs.InstructionHelper;
 import de.larma.arthook.instrs.Thumb2;
 
-public class ArtHook {
-    private static final String TAG = "ArtHook";
+public final class ArtHook {
+    public static final String TAG = "ArtHook";
     private static final Map<Long, HookPage> pages = new HashMap<>();
     private static InstructionHelper INSTRUCTION_SET_HELPER;
+
+    private ArtHook() {
+    }
 
     static {
         try {
@@ -43,13 +46,13 @@ public class ArtHook {
                     INSTRUCTION_SET_HELPER = new Arm32();
                 }
             }
-            Log.d(TAG, "Using: "+INSTRUCTION_SET_HELPER.getName());
+            Log.d(TAG, "Using: " + INSTRUCTION_SET_HELPER.getName());
         } catch (Exception ignored) {
         }
     }
 
     private static HookPage handleHookPage(ArtMethod original, ArtMethod replacement,
-            ArtMethod backup) {
+                                           ArtMethod backup) {
         long originalEntryPoint = INSTRUCTION_SET_HELPER.toMem(
                 original.getEntryPointFromQuickCompiledCode());
         if (!pages.containsKey(originalEntryPoint)) {
@@ -110,7 +113,7 @@ public class ArtHook {
     }
 
     public static OriginalMethod hook(Method originalMethod, Method replacementMethod,
-            Method backupMethod, String backupIdentifier) {
+                                      Method backupMethod, String backupIdentifier) {
         Assertions.argumentNotNull(originalMethod, "originalMethod");
         Assertions.argumentNotNull(replacementMethod, "replacementMethod");
         if (originalMethod == replacementMethod || originalMethod.equals(replacementMethod))
@@ -148,7 +151,7 @@ public class ArtHook {
     }
 
     private static Method findTargetMethod(Method method, Class targetClass,
-            String methodName) throws NoSuchMethodException {
+                                           String methodName) throws NoSuchMethodException {
         Class[] params = null;
         if (method.getParameterTypes().length > 0) {
             params = new Class[method.getParameterTypes().length - 1];

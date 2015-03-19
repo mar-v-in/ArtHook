@@ -1,6 +1,7 @@
 package de.larma.arthook.test;
 
 import android.app.Activity;
+import android.net.sip.SipAudioCall;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -45,6 +46,12 @@ public class MyActivity extends Activity {
         // as you specify a parent activity in AndroidManifest.xml.
         int id = item.getItemId();
         if (id == R.id.action_settings) {
+            try {
+                SipAudioCall call = new SipAudioCall(this, null);
+                call.startAudio();
+            } catch (Exception e) {
+                Log.w(TAG, e);
+            }
             return true;
         }
         return super.onOptionsItemSelected(item);

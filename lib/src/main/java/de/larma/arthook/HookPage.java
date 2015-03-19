@@ -16,10 +16,15 @@
 
 package de.larma.arthook;
 
+import android.util.Log;
+
 import java.util.HashSet;
 import java.util.Set;
 
 import de.larma.arthook.instrs.InstructionHelper;
+
+import static android.os.Build.VERSION.SDK_INT;
+import static android.os.Build.VERSION_CODES.LOLLIPOP_MR1;
 
 /**
  * Represents and manages a memory page for a hooked method.
@@ -36,7 +41,10 @@ import de.larma.arthook.instrs.InstructionHelper;
  * </ul>
  */
 public class HookPage {
-    private static final int QUICK_HEADER_SIZE = 24;
+    private static final int QUICK_HEADER_SIZE_LMR0 = 24;
+    private static final int QUICK_HEADER_SIZE_LMR1 = 28;
+    private static final int QUICK_HEADER_SIZE =
+            SDK_INT >= LOLLIPOP_MR1 ? QUICK_HEADER_SIZE_LMR1 : QUICK_HEADER_SIZE_LMR0;
 
     private final InstructionHelper instructionHelper;
     private final long originalAddress;
@@ -134,6 +142,7 @@ public class HookPage {
                 (getCallOriginal()));
         System.arraycopy(jumpCallOriginal, 0, mainPage, offset,
                 instructionHelper.sizeOfDirectJump());
+        Log.d(ArtHook.TAG, "Writing HookPage for " + hooks.iterator().next().src);
         Native.memput_verbose(mainPage, allocatedAddress);
         return allocatedAddress;
     }

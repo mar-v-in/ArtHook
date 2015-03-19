@@ -3,6 +3,7 @@ package de.larma.arthook.test;
 import android.app.Activity;
 import android.app.Application;
 import android.hardware.Camera;
+import android.net.sip.SipAudioCall;
 import android.util.Log;
 import android.widget.TextView;
 
@@ -50,6 +51,12 @@ public class MyApplication extends Application {
     public void pieceGame() {
     }
 
+    @Hook("android.net.sip.SipAudioCall->startAudio")
+    public static void SipAudioCall_startAudio(SipAudioCall call) {
+        Log.d(TAG, "SipAudioCall_startAudio");
+        OriginalMethod.by(new $() {}).invoke(call);
+    }
+
     /**
      * Sample hook of a public member method
      */
@@ -91,7 +98,7 @@ public class MyApplication extends Application {
     @Hook("java.lang.Class->getDeclaredMethod")
     @BackupIdentifier("Class_getDeclaredMethod")
     public static Method Class_getDeclaredMethod(Class cls, String name, Class[] params) {
-        Log.d(TAG, "I'm hooked in getDeclaredMethod: " + cls + " -> " + name);
+        //Log.d(TAG, "I'm hooked in getDeclaredMethod: " + cls + " -> " + name);
         if (name.contains("War") || name.contains("war")) {
             Log.d(TAG, "make piece not war!"); // This is a political statement!
             name = name.replace("War", "Piece").replace("war", "piece");

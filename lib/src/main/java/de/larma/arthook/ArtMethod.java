@@ -16,6 +16,8 @@
 
 package de.larma.arthook;
 
+import android.util.Log;
+
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -46,9 +48,11 @@ public class ArtMethod {
     private static final String FIELD_ENTRY_POINT_FROM_QUICK_COMPILED_CODE = "entryPointFromQuickCompiledCode";
     private static final int FIELD_ENTRY_POINT_FROM_QUICK_COMPILED_CODE_MR1_NATIVE_INDEX = 2;
 
-    private static final int LOLLIPOP_MR1_MIRROR_FIELDS = 36;
-    private static final int LOLLIPOP_MR1_NATIVE_FIELDS = Native.is64Bit() ? 24 : 12;
-    private static final int LOLLIPOP_MR1_OBJECT_SIZE = LOLLIPOP_MR1_NATIVE_FIELDS + LOLLIPOP_MR1_MIRROR_FIELDS;
+    private static final int LMR1_MIRROR_FIELDS = 36;
+    private static final int LMR1_NATIVE_FIELDS_32 = 12;
+    private static final int LMR1_NATIVE_FIELDS_64 = 24;
+    private static final int LMR1_NATIVE_FIELDS = Native.is64Bit() ? LMR1_NATIVE_FIELDS_64 : LMR1_NATIVE_FIELDS_32;
+    private static final int LMR1_OBJECT_SIZE = LMR1_NATIVE_FIELDS + LMR1_MIRROR_FIELDS;
 
     private final Object artMethod;
 
@@ -98,20 +102,20 @@ public class ArtMethod {
         if (SDK_INT >= LOLLIPOP_MR1) {
             switch (name) {
                 case FIELD_ENTRY_POINT_FROM_INTERPRETER:
-                    return getMr1Native(FIELD_ENTRY_POINT_FROM_INTERPRETER_MR1_NATIVE_INDEX);
+                    return getLMR1Native(FIELD_ENTRY_POINT_FROM_INTERPRETER_MR1_NATIVE_INDEX);
                 case FIELD_ENTRY_POINT_FROM_JNI:
-                    return getMr1Native(FIELD_ENTRY_POINT_FROM_JNI_MR1_NATIVE_INDEX);
+                    return getLMR1Native(FIELD_ENTRY_POINT_FROM_JNI_MR1_NATIVE_INDEX);
                 case FIELD_ENTRY_POINT_FROM_QUICK_COMPILED_CODE:
-                    return getMr1Native(FIELD_ENTRY_POINT_FROM_QUICK_COMPILED_CODE_MR1_NATIVE_INDEX);
+                    return getLMR1Native(FIELD_ENTRY_POINT_FROM_QUICK_COMPILED_CODE_MR1_NATIVE_INDEX);
             }
         }
         return get(getField(name));
     }
 
-    private long getMr1Native(int num) {
+    private long getLMR1Native(int num) {
         long objectAddress = Unsafe.getObjectAddress(artMethod);
         int intSize = Native.is64Bit() ? 8 : 4;
-        byte[] bytes = Native.memget_verbose(objectAddress + LOLLIPOP_MR1_MIRROR_FIELDS + intSize * num, intSize);
+        byte[] bytes = Native.memget_verbose(objectAddress + LMR1_MIRROR_FIELDS + intSize * num, intSize);
         if (Native.is64Bit()) {
             return ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN).getLong();
         } else {
@@ -123,20 +127,20 @@ public class ArtMethod {
         if (SDK_INT >= LOLLIPOP_MR1) {
             switch (name) {
                 case FIELD_ENTRY_POINT_FROM_INTERPRETER:
-                    setMr1NATIVE(FIELD_ENTRY_POINT_FROM_INTERPRETER_MR1_NATIVE_INDEX, (Long) value);
+                    setLMR1Native(FIELD_ENTRY_POINT_FROM_INTERPRETER_MR1_NATIVE_INDEX, (Long) value);
                     return;
                 case FIELD_ENTRY_POINT_FROM_JNI:
-                    setMr1NATIVE(FIELD_ENTRY_POINT_FROM_JNI_MR1_NATIVE_INDEX, (Long) value);
+                    setLMR1Native(FIELD_ENTRY_POINT_FROM_JNI_MR1_NATIVE_INDEX, (Long) value);
                     return;
                 case FIELD_ENTRY_POINT_FROM_QUICK_COMPILED_CODE:
-                    setMr1NATIVE(FIELD_ENTRY_POINT_FROM_QUICK_COMPILED_CODE_MR1_NATIVE_INDEX, (Long) value);
+                    setLMR1Native(FIELD_ENTRY_POINT_FROM_QUICK_COMPILED_CODE_MR1_NATIVE_INDEX, (Long) value);
                     return;
             }
         }
         set(getField(name), value);
     }
 
-    private void setMr1NATIVE(int num, long value) {
+    private void setLMR1Native(int num, long value) {
         long objectAddress = Unsafe.getObjectAddress(artMethod);
         int intSize = Native.is64Bit() ? 8 : 4;
         byte[] bytes;
@@ -145,7 +149,7 @@ public class ArtMethod {
         } else {
             bytes = ByteBuffer.allocate(intSize).order(ByteOrder.LITTLE_ENDIAN).putInt((int) value).array();
         }
-        Native.memput_verbose(bytes, objectAddress + LOLLIPOP_MR1_MIRROR_FIELDS + intSize * num);
+        Native.memput_verbose(bytes, objectAddress + LMR1_MIRROR_FIELDS + intSize * num);
     }
 
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneDoesntDeclareCloneNotSupportedException"})
@@ -153,13 +157,13 @@ public class ArtMethod {
         ArtMethod clone = new ArtMethod();
         if (SDK_INT >= LOLLIPOP_MR1) {
             long objectAddress = Unsafe.getObjectAddress(artMethod);
-            long map = Native.mmap_verbose(LOLLIPOP_MR1_OBJECT_SIZE);
-            Native.memcpy(objectAddress, map, LOLLIPOP_MR1_OBJECT_SIZE);
+            long map = Native.mmap_verbose(LMR1_OBJECT_SIZE);
+            Native.memcpy(objectAddress, map, LMR1_OBJECT_SIZE);
             try {
                 long pointerOffset = Unsafe.objectFieldOffset(ArtMethod.class.getDeclaredField("artMethod"));
                 Unsafe.putLong(clone, pointerOffset, map);
             } catch (NoSuchFieldException e) {
-                e.printStackTrace();
+                Log.w(ArtHook.TAG, e);
             }
         }
         writeTo(clone);

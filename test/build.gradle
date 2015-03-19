@@ -3,7 +3,7 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:1.0.0'
+        classpath 'com.android.tools.build:gradle:1.1.0'
     }
 }
 apply plugin: 'com.android.application'
@@ -13,8 +13,8 @@ repositories {
 }
 
 android {
-    compileSdkVersion 'android-19'
-    buildToolsVersion "20.0.0"
+    compileSdkVersion 'android-22'
+    buildToolsVersion "22.0.0"
 
     defaultConfig {
         applicationId "de.larma.ahook.test"
