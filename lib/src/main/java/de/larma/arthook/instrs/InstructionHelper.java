@@ -77,6 +77,8 @@ public abstract class InstructionHelper {
                 targetMethod.getEntryPointFromQuickCompiledCode() + offset);
     }
 
+    public abstract int sizeOfArtJump();
+
     public abstract byte[] createArtJump(long artMethodAddress, long jumpTarget);
 
     public byte[] createArtJump(ArtMethod targetMethod) {
