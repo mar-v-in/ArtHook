@@ -25,8 +25,9 @@
 
 JNIEXPORT void JNICALL Java_de_larma_arthook_Native_munprotect(JNIEnv *env, jclass _cls, jlong addr, jlong len) {
     int pagesize = sysconf(_SC_PAGESIZE);
-    
-    int i = mprotect((void *)(addr-(addr%pagesize)), (size_t)len, PROT_READ | PROT_WRITE | PROT_EXEC);
+    int alignment = (addr%pagesize);
+
+    int i = mprotect((void *)(addr-alignment), (size_t)(len+alignment), PROT_READ | PROT_WRITE | PROT_EXEC);
     if (i == -1) {
         LOGV("mprotect failed: %d", errno);
     }
