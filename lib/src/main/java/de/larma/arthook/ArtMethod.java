@@ -115,7 +115,7 @@ public class ArtMethod {
     private long getLMR1Native(int num) {
         long objectAddress = Unsafe.getObjectAddress(artMethod);
         int intSize = Native.is64Bit() ? 8 : 4;
-        byte[] bytes = Native.memget_verbose(objectAddress + LMR1_MIRROR_FIELDS + intSize * num, intSize);
+        byte[] bytes = Memory.get(objectAddress + LMR1_MIRROR_FIELDS + intSize * num, intSize);
         if (Native.is64Bit()) {
             return ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN).getLong();
         } else {
@@ -149,7 +149,7 @@ public class ArtMethod {
         } else {
             bytes = ByteBuffer.allocate(intSize).order(ByteOrder.LITTLE_ENDIAN).putInt((int) value).array();
         }
-        Native.memput_verbose(bytes, objectAddress + LMR1_MIRROR_FIELDS + intSize * num);
+        Memory.put(bytes, objectAddress + LMR1_MIRROR_FIELDS + intSize * num);
     }
 
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneDoesntDeclareCloneNotSupportedException"})
@@ -157,7 +157,7 @@ public class ArtMethod {
         ArtMethod clone = new ArtMethod();
         if (SDK_INT >= LOLLIPOP_MR1) {
             long objectAddress = Unsafe.getObjectAddress(artMethod);
-            long map = Native.mmap_verbose(LMR1_OBJECT_SIZE);
+            long map = Memory.map(LMR1_OBJECT_SIZE);
             Native.memcpy(objectAddress, map, LMR1_OBJECT_SIZE);
             try {
                 long pointerOffset = Unsafe.objectFieldOffset(ArtMethod.class.getDeclaredField("artMethod"));

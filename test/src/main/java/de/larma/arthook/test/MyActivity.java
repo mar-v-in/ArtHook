@@ -29,7 +29,7 @@ public class MyActivity extends Activity {
     public void setContentView(int layoutResID) {
         Log.d(TAG, "before Activity.setContentView");
         super.setContentView(layoutResID);
-        //Log.d(TAG, "after Activity.setContentView");
+        Log.d(TAG, "after Activity.setContentView");
     }
 
     @Override

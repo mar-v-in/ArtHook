@@ -42,7 +42,7 @@ public class MyApplication extends Application {
             Log.d("MyApplication", "Time:" + System.currentTimeMillis());
             Log.d("MyApplication", "BackupTime:" + OriginalMethod.byOriginal(System.class
                     .getDeclaredMethod("currentTimeMillis")).invokeStatic());
-        } catch (NoSuchMethodException e) {
+        } catch (Exception e) {
             Log.w(TAG, e);
         }
 
@@ -64,11 +64,11 @@ public class MyApplication extends Application {
     public static void Activity_setContentView(Activity activity, int layoutResID) {
         Log.d(TAG, "before Original[Activity.setContentView]");
         OriginalMethod.by(new $() {}).invoke(activity, layoutResID);
-        //Log.d(TAG, "after Original[Activity.setContentView]");
+        Log.d(TAG, "after Original[Activity.setContentView]");
         TextView text = ((TextView) activity.findViewById(R.id.helloWorldText));
         text.append("\n -- I am god");
         text.append("\n " + new Date().toString());
-        //Log.d(TAG, "end Hook[Activity.setContentView]");
+        Log.d(TAG, "end Hook[Activity.setContentView]");
     }
 
     /**
@@ -76,8 +76,11 @@ public class MyApplication extends Application {
      */
     @Hook("android.hardware.Camera->open")
     public static Camera Camera_open() {
-        Log.d(TAG, "We do not allow Camera access");
-        return null;
+        try {
+            return OriginalMethod.by(new $() {}).invokeStatic();
+        } catch (Exception e) {
+            throw new SecurityException("We do not allow Camera access", e);
+        }
     }
 
     /**
@@ -98,7 +101,7 @@ public class MyApplication extends Application {
     @Hook("java.lang.Class->getDeclaredMethod")
     @BackupIdentifier("Class_getDeclaredMethod")
     public static Method Class_getDeclaredMethod(Class cls, String name, Class[] params) {
-        //Log.d(TAG, "I'm hooked in getDeclaredMethod: " + cls + " -> " + name);
+        Log.d(TAG, "I'm hooked in getDeclaredMethod: " + cls + " -> " + name);
         if (name.contains("War") || name.contains("war")) {
             Log.d(TAG, "make piece not war!"); // This is a political statement!
             name = name.replace("War", "Piece").replace("war", "piece");

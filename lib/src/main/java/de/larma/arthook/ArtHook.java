@@ -51,8 +51,7 @@ public final class ArtHook {
         }
     }
 
-    private static HookPage handleHookPage(ArtMethod original, ArtMethod replacement,
-                                           ArtMethod backup) {
+    private static HookPage handleHookPage(ArtMethod original, ArtMethod replacement) {
         long originalEntryPoint = INSTRUCTION_SET_HELPER.toMem(
                 original.getEntryPointFromQuickCompiledCode());
         if (!pages.containsKey(originalEntryPoint)) {
@@ -61,7 +60,7 @@ public final class ArtHook {
         }
 
         HookPage page = pages.get(originalEntryPoint);
-        page.addHook(new HookPage.Hook(original, replacement, backup));
+        page.addHook(new HookPage.Hook(original, replacement));
         page.update();
         return page;
     }
@@ -89,31 +88,15 @@ public final class ArtHook {
         } catch (Throwable e) {
             throw new RuntimeException("Can't find original method", e);
         }
-        Method backup = null;
-        Hook hook = method.getAnnotation(Hook.class);
-        for (Method candidate : method.getDeclaringClass().getDeclaredMethods()) {
-            if (candidate.isAnnotationPresent(BackupMethod.class)) {
-                BackupMethod backupMethod = candidate.getAnnotation(BackupMethod.class);
-                String[] splitBackup = backupMethod.value().split("->");
-                String[] splitHook = hook.value().split("->");
-                if (splitBackup[0].equals(splitHook[0]) && (
-                        (splitHook.length == 2 && splitHook[1].equals(splitBackup[1])) ||
-                                (splitHook.length == 1 &&
-                                        method.getName().equals(splitBackup[1])))) {
-                    backup = candidate;
-                    break;
-                }
-            }
-        }
         String ident = null;
         if (method.isAnnotationPresent(BackupIdentifier.class)) {
             ident = method.getAnnotation(BackupIdentifier.class).value();
         }
-        return hook(original, method, backup, ident);
+        return hook(original, method, ident);
     }
 
     public static OriginalMethod hook(Method originalMethod, Method replacementMethod,
-                                      Method backupMethod, String backupIdentifier) {
+                                      String backupIdentifier) {
         Assertions.argumentNotNull(originalMethod, "originalMethod");
         Assertions.argumentNotNull(replacementMethod, "replacementMethod");
         if (originalMethod == replacementMethod || originalMethod.equals(replacementMethod))
@@ -126,16 +109,12 @@ public final class ArtHook {
         ArtMethod original = ArtMethod.of(originalMethod);
         ArtMethod replacement = ArtMethod.of(replacementMethod);
 
-        HookPage page = handleHookPage(original, replacement, ArtMethod.of(backupMethod));
+        HookPage page = handleHookPage(original, replacement);
 
         ArtMethod backArt = original.clone();
-        long originalEntryPoint = INSTRUCTION_SET_HELPER.toMem(backArt
-                .getEntryPointFromQuickCompiledCode());
-        backArt.setEntryPointFromQuickCompiledCode(pages.get(originalEntryPoint)
-                .getCallOriginal());
         backArt.makePrivate();
 
-        backupMethod = backArt.newMethod();
+        Method backupMethod = backArt.newMethod();
         backupMethod.setAccessible(true);
         OriginalMethod.store(originalMethod, backupMethod, backupIdentifier);
         page.activate();

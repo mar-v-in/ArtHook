@@ -16,10 +16,10 @@
 
 package de.larma.arthook;
 
-import android.util.Log;
+import static de.larma.arthook.DebugHelper.intHex;
+import static de.larma.arthook.DebugHelper.logd;
 
 public final class Native {
-    private static final String TAG = "ArtHook.Native";
 
     static {
         System.loadLibrary("arthook_native");
@@ -30,52 +30,17 @@ public final class Native {
 
     public static native long mmap(int length);
 
-    public static long mmap_verbose(int length) {
-        long mmap = mmap(length);
-        Log.d(TAG, "Mapped memory of size " + length + " at " + DebugHelper.intHex(mmap));
-        return mmap;
-    }
-
     public static native void munmap(long address, int length);
-
-    public static void munmap_verbose(long address, int length) {
-        Log.d(TAG,
-                "Removing mapped memory of size " + length + " at " + DebugHelper.intHex(address));
-        munmap(address, length);
-    }
 
     public static native void memcpy(long src, long dest, int length);
 
     public static native void memput(byte[] bytes, long dest);
 
-    public static void memput_verbose(byte[] bytes, long dest) {
-        Log.d(TAG, "Writing memory to: " + DebugHelper.intHex(dest));
-        Log.d(TAG, DebugHelper.hexdump(bytes, (int) dest));
-        memput(bytes, dest);
-    }
-
     public static native byte[] memget(long src, int length);
-
-    public static byte[] memget_verbose(long src, int length) {
-        Log.d(TAG, "Reading memory from: " + DebugHelper.intHex(src));
-        byte[] bytes = memget(src, length);
-        Log.d(TAG, DebugHelper.hexdump(bytes, (int) src));
-        return bytes;
-    }
 
     public static native void munprotect(long addr, long len);
 
-    public static void munprotect_verbose(long addr, long len) {
-        Log.d(TAG, "Disabling mprotect from " + DebugHelper.intHex(addr));
-        munprotect(addr, len);
-    }
-
     public static native void ptrace(int pid);
-
-    public static void ptrace_verbose(int pid) {
-        Log.d(TAG, "ptrace'ing " + pid);
-        ptrace(pid);
-    }
 
     private static Boolean sixtyFour;
 

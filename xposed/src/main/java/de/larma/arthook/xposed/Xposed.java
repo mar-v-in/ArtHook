@@ -7,6 +7,7 @@ import java.text.DateFormat;
 import java.util.Date;
 
 import de.larma.arthook.ArtMethod;
+import de.larma.arthook.Memory;
 
 public final class Xposed {
 
@@ -43,14 +44,14 @@ public final class Xposed {
                 Log.d(TAG, "Removed SELinux enforcement failed, trying to continue anyway!");
             }
         }
-        if (de.larma.arthook.Native.mmap_verbose(1) == 0) {
+        if (Memory.map(1) == 0) {
             Log.d(TAG, "Mapping memory rwx is blocked by SELinux :(");
         } else {
             Log.d(TAG, "we can mmap rwx!");
         }
         try {
             long addr = ArtMethod.of(Xposed.class.getDeclaredMethod("test")).getEntryPointFromQuickCompiledCode() - 1;
-            de.larma.arthook.Native.munprotect_verbose(addr, 2);
+            Memory.unprotect(addr, 2);
             Log.d(TAG, "we can remove mprotect!");
         } catch (Exception e) {
             Log.d(TAG, "Removing mprotect from memory is blocked by SELinux :(");

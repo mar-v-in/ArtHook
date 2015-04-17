@@ -16,11 +16,15 @@
 
 package de.larma.arthook;
 
+import android.util.Log;
+
 import java.lang.reflect.Method;
 
 public final class DebugHelper {
-
+    private static final String TAG = "ArtHook";
     private static final int HEXDUMP_BYTES_PER_LINE = 16;
+
+    public static boolean DEBUG = true;
 
     private DebugHelper() {
     }
@@ -49,6 +53,14 @@ public final class DebugHelper {
                 sb.append("   ");
         }
         return sb.toString().trim();
+    }
+
+    public static void logd(String msg) {
+        if (DEBUG) Log.d(TAG, msg);
+    }
+
+    public static void logd(String tagSuffix, String msg) {
+        if (DEBUG) Log.d(TAG + "." + tagSuffix, msg);
     }
 
     public static String methodDescription(Method method) {
