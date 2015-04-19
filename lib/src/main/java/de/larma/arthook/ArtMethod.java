@@ -16,8 +16,6 @@
 
 package de.larma.arthook;
 
-import android.util.Log;
-
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -185,7 +183,7 @@ public class ArtMethod {
                 long pointerOffset = Unsafe.objectFieldOffset(ArtMethod.class.getDeclaredField("artMethod"));
                 Unsafe.putLong(clone, pointerOffset, map);
             } catch (NoSuchFieldException e) {
-                Log.w(ArtHook.TAG, e);
+                DebugHelper.logw(e);
             }
         }
         writeTo(clone);

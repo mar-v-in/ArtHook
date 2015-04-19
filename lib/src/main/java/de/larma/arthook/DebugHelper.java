@@ -68,4 +68,8 @@ public final class DebugHelper {
                 intHex(ArtMethod.of(method).getEntryPointFromQuickCompiledCode()) +
                 " +" + intHex(ArtMethod.of(method).getAddress());
     }
+
+    public static void logw(Exception e) {
+        if (DEBUG) Log.w(TAG, e);
+    }
 }

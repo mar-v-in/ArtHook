@@ -16,8 +16,6 @@
 
 package de.larma.arthook;
 
-import android.util.Log;
-
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -28,8 +26,10 @@ import de.larma.arthook.instrs.Arm32;
 import de.larma.arthook.instrs.InstructionHelper;
 import de.larma.arthook.instrs.Thumb2;
 
+import static de.larma.arthook.DebugHelper.logd;
+import static de.larma.arthook.DebugHelper.logw;
+
 public final class ArtHook {
-    public static final String TAG = "ArtHook";
     private static final Map<Long, HookPage> pages = new HashMap<>();
     private static InstructionHelper INSTRUCTION_SET_HELPER;
 
@@ -47,7 +47,7 @@ public final class ArtHook {
                     INSTRUCTION_SET_HELPER = new Arm32();
                 }
             }
-            Log.d(TAG, "Using: " + INSTRUCTION_SET_HELPER.getName());
+            logd("Using: " + INSTRUCTION_SET_HELPER.getName());
         } catch (Exception ignored) {
         }
     }
@@ -73,7 +73,7 @@ public final class ArtHook {
                 try {
                     hook(method);
                 } catch (RuntimeException e) {
-                    Log.w(TAG, e);
+                    logw(e);
                 }
             }
         }
@@ -117,7 +117,7 @@ public final class ArtHook {
             throw new IllegalArgumentException(
                     "return types of originalMethod and replacementMethod do not match");
 
-       return hook(ArtMethod.of(originalMethod), ArtMethod.of(replacementMethod));
+        return hook(ArtMethod.of(originalMethod), ArtMethod.of(replacementMethod));
     }
 
     public static ArtMethod hook(Constructor<?> originalMethod, Method replacementMethod) {

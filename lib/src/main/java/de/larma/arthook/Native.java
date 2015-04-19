@@ -16,9 +16,6 @@
 
 package de.larma.arthook;
 
-import static de.larma.arthook.DebugHelper.intHex;
-import static de.larma.arthook.DebugHelper.logd;
-
 public final class Native {
 
     static {
