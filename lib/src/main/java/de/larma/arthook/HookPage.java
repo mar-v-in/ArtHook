@@ -114,12 +114,12 @@ public class HookPage {
 
     public void update() {
         byte[] page = create();
-        Log.d(ArtHook.TAG, "Writing HookPage for " + hooks.iterator().next().src);
+        DebugHelper.logd(ArtHook.TAG, "Writing HookPage for " + hooks.iterator().next().src);
         Memory.put(page, getBaseAddress());
     }
 
     public void activate() {
-        Log.d(ArtHook.TAG, "Writing hook to " + DebugHelper.intHex(getCallHook()) + " in " + DebugHelper.intHex(originalAddress));
+        DebugHelper.logd(ArtHook.TAG, "Writing hook to " + DebugHelper.intHex(getCallHook()) + " in " + DebugHelper.intHex(originalAddress));
         Memory.unprotect(originalAddress, instructionHelper.sizeOfDirectJump());
         Memory.put(instructionHelper.createDirectJump(getCallHook()), originalAddress);
     }
