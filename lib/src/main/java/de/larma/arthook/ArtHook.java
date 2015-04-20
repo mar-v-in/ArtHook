@@ -18,6 +18,7 @@ package de.larma.arthook;
 
 import android.util.Log;
 
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.HashMap;
@@ -97,28 +98,46 @@ public final class ArtHook {
 
     public static OriginalMethod hook(Method originalMethod, Method replacementMethod,
                                       String backupIdentifier) {
+        ArtMethod backArt = hook(originalMethod, replacementMethod);
+
+        Method backupMethod = backArt.newMethod();
+        backupMethod.setAccessible(true);
+        OriginalMethod.store(originalMethod, backupMethod, backupIdentifier);
+
+        return new OriginalMethod(backupMethod);
+    }
+
+    public static ArtMethod hook(Method originalMethod, Method replacementMethod) {
         Assertions.argumentNotNull(originalMethod, "originalMethod");
         Assertions.argumentNotNull(replacementMethod, "replacementMethod");
         if (originalMethod == replacementMethod || originalMethod.equals(replacementMethod))
             throw new IllegalArgumentException("originalMethod and replacementMethod can't be the" +
                     " same");
-        if (!replacementMethod.getReturnType().equals(originalMethod.getReturnType()))
+        if (!replacementMethod.getReturnType().isAssignableFrom(originalMethod.getReturnType()))
             throw new IllegalArgumentException(
                     "return types of originalMethod and replacementMethod do not match");
 
-        ArtMethod original = ArtMethod.of(originalMethod);
-        ArtMethod replacement = ArtMethod.of(replacementMethod);
+       return hook(ArtMethod.of(originalMethod), ArtMethod.of(replacementMethod));
+    }
 
+    public static ArtMethod hook(Constructor<?> originalMethod, Method replacementMethod) {
+        Assertions.argumentNotNull(originalMethod, "originalMethod");
+        Assertions.argumentNotNull(replacementMethod, "replacementMethod");
+        if (replacementMethod.getReturnType() != Void.TYPE)
+            throw new IllegalArgumentException(
+                    "return types of replacementMethod has to be 'void'");
+
+        return hook(ArtMethod.of(originalMethod), ArtMethod.of(replacementMethod));
+    }
+
+    private static ArtMethod hook(ArtMethod original, ArtMethod replacement) {
         HookPage page = handleHookPage(original, replacement);
 
         ArtMethod backArt = original.clone();
         backArt.makePrivate();
 
-        Method backupMethod = backArt.newMethod();
-        backupMethod.setAccessible(true);
-        OriginalMethod.store(originalMethod, backupMethod, backupIdentifier);
         page.activate();
-        return new OriginalMethod(backupMethod);
+        return backArt;
     }
 
     static Method findTargetMethod(Method method)
@@ -129,11 +148,11 @@ public final class ArtHook {
                 split.length == 1 ? method.getName() : split[1]);
     }
 
-    private static Method findTargetMethod(Method method, Class targetClass,
+    private static Method findTargetMethod(Method method, Class<?> targetClass,
                                            String methodName) throws NoSuchMethodException {
-        Class[] params = null;
+        Class<?>[] params = null;
         if (method.getParameterTypes().length > 0) {
-            params = new Class[method.getParameterTypes().length - 1];
+            params = new Class<?>[method.getParameterTypes().length - 1];
             System.arraycopy(method.getParameterTypes(), 1, params, 0,
                     method.getParameterTypes().length - 1);
         }

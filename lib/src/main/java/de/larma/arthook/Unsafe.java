@@ -33,7 +33,13 @@ public final class Unsafe {
             theUnsafe.setAccessible(true);
             unsafe = theUnsafe.get(null);
         } catch (Exception e) {
-            Log.w(TAG, "Unsafe not found o.O");
+            try {
+                final Field theUnsafe = unsafeClass.getDeclaredField("THE_ONE");
+                theUnsafe.setAccessible(true);
+                unsafe = theUnsafe.get(null);
+            } catch (Exception e2) {
+                Log.w(TAG, "Unsafe not found o.O");
+            }
         }
     }
 
