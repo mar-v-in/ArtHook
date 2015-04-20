@@ -85,6 +85,28 @@ public class ArtMethod {
      * @throws java.lang.NullPointerException when the {@param method} is a null pointer
      */
     public static ArtMethod of(Method method) {
+        return of((Object) method);
+    }
+
+    /**
+     * Generate a helper for the ArtMethod instance residing in the given Constructor.
+     *
+     * @param constructor Any valid Constructor instance.
+     * @return A new helper for the ArtMethod
+     * @throws java.lang.NullPointerException when the {@param method} is a null pointer
+     */
+    public static ArtMethod of(Constructor<?> constructor) {
+        return of((Object) constructor);
+    }
+
+    /**
+     * Generate a helper for the ArtMethod instance residing in the given Constructor or Method.
+     *
+     * @param method Any valid Constructor or Method instance.
+     * @return A new helper for the ArtMethod
+     * @throws java.lang.NullPointerException when the {@param method} is a null pointer
+     */
+    private static ArtMethod of(Object method) {
         if (method == null)
             return null;
         try {
@@ -176,6 +198,17 @@ public class ArtMethod {
                     .newInstance(artMethod);
             m.setAccessible(true);
             return m;
+        } catch (Throwable t) {
+            throw new RuntimeException("Can't create new Method", t);
+        }
+    }
+
+    public Constructor<?> newConstructor() {
+        try {
+            Constructor<?> c = Constructor.class.getConstructor(Class.forName(ART_METHOD_CLASS_NAME))
+                    .newInstance(artMethod);
+            c.setAccessible(true);
+            return c;
         } catch (Throwable t) {
             throw new RuntimeException("Can't create new Method", t);
         }
