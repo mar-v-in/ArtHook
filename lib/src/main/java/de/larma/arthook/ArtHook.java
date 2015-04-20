@@ -113,7 +113,7 @@ public final class ArtHook {
         if (originalMethod == replacementMethod || originalMethod.equals(replacementMethod))
             throw new IllegalArgumentException("originalMethod and replacementMethod can't be the" +
                     " same");
-        if (!replacementMethod.getReturnType().equals(originalMethod.getReturnType()))
+        if (!replacementMethod.getReturnType().isAssignableFrom(originalMethod.getReturnType()))
             throw new IllegalArgumentException(
                     "return types of originalMethod and replacementMethod do not match");
 
