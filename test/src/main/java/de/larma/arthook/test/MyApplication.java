@@ -3,6 +3,7 @@ package de.larma.arthook.test;
 import android.app.Activity;
 import android.app.Application;
 import android.hardware.Camera;
+import android.net.ConnectivityManager;
 import android.net.sip.SipAudioCall;
 import android.util.Log;
 import android.widget.TextView;
@@ -90,6 +91,15 @@ public class MyApplication extends Application {
     public static long System_currentTimeMillis() {
         Log.d(TAG, "currentTimeMillis is much better in seconds :)");
         return (long) OriginalMethod.by(new $() {}).invokeStatic() / 1000L;
+    }
+
+    /**
+     * Hooking an empty method
+     */
+    @Hook("android.net.ConnectivityManager->setNetworkPreference")
+    public static void ConnectivityManager_setNetworkPreference(ConnectivityManager manager, int preference) {
+        Log.d(TAG, "Making something from nothing!");
+        OriginalMethod.by(new $() {}).invoke(manager, preference);
     }
 
     /**

@@ -19,6 +19,8 @@ package de.larma.arthook;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -131,6 +133,13 @@ public final class ArtHook {
     }
 
     private static ArtMethod hook(ArtMethod original, ArtMethod replacement) {
+        if (getQuickCompiledCodeSize(original) < INSTRUCTION_SET_HELPER.sizeOfDirectJump()) {
+            DebugHelper.logw("Can't hook " + original + ", size " +
+                    getQuickCompiledCodeSize(original) + " is to small (required: " +
+                    INSTRUCTION_SET_HELPER.sizeOfDirectJump() + ")");
+            return original;
+        }
+
         HookPage page = handleHookPage(original, replacement);
 
         ArtMethod backArt = original.clone();
@@ -138,6 +147,13 @@ public final class ArtHook {
 
         page.activate();
         return backArt;
+    }
+
+    private static int getQuickCompiledCodeSize(ArtMethod method) {
+        long entryPoint = INSTRUCTION_SET_HELPER.toMem(method.getEntryPointFromQuickCompiledCode());
+        long sizeInfo1 = entryPoint - 4;
+        byte[] bytes = Memory.get(sizeInfo1, 4);
+        return ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN).getInt();
     }
 
     static Method findTargetMethod(Method method)

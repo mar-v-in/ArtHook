@@ -25,6 +25,7 @@ public final class DebugHelper {
     private static final int HEXDUMP_BYTES_PER_LINE = 16;
 
     public static boolean DEBUG = true;
+    public static boolean WARN = true;
 
     private DebugHelper() {
     }
@@ -63,13 +64,17 @@ public final class DebugHelper {
         if (DEBUG) Log.d(TAG + "." + tagSuffix, msg);
     }
 
+    public static void logw(Exception e) {
+        if (WARN) Log.w(TAG, e);
+    }
+
+    public static void logw(String msg) {
+        if (WARN) Log.w(TAG, msg);
+    }
+
     public static String methodDescription(Method method) {
         return method.getDeclaringClass().getName() + "->" + method.getName() + " @" +
                 intHex(ArtMethod.of(method).getEntryPointFromQuickCompiledCode()) +
                 " +" + intHex(ArtMethod.of(method).getAddress());
-    }
-
-    public static void logw(Exception e) {
-        if (DEBUG) Log.w(TAG, e);
     }
 }
