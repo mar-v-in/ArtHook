@@ -2,6 +2,7 @@ package de.larma.arthook.test;
 
 import android.app.Activity;
 import android.app.Application;
+import android.content.Context;
 import android.hardware.Camera;
 import android.net.ConnectivityManager;
 import android.net.sip.SipAudioCall;
@@ -43,6 +44,13 @@ public class MyApplication extends Application {
             Log.d("MyApplication", "Time:" + System.currentTimeMillis());
             Log.d("MyApplication", "BackupTime:" + OriginalMethod.byOriginal(System.class
                     .getDeclaredMethod("currentTimeMillis")).invokeStatic());
+        } catch (Exception e) {
+            Log.w(TAG, e);
+        }
+
+        try {
+            ConnectivityManager connectivityManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+            connectivityManager.setNetworkPreference(0);
         } catch (Exception e) {
             Log.w(TAG, e);
         }

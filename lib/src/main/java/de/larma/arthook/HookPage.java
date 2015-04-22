@@ -40,13 +40,16 @@ public class HookPage {
     private final Set<Hook> hooks = new HashSet<>();
     private int allocatedSize;
     private long allocatedAddress;
+    private int quickCompiledCodeSize;
 
-    public HookPage(InstructionHelper instructionHelper, long originalAddress) {
+    public HookPage(InstructionHelper instructionHelper, long originalAddress, int quickCompiledCodeSize) {
         Assertions.argumentNotNull(instructionHelper, "instructionHelper");
         this.instructionHelper = instructionHelper;
         this.originalAddress = originalAddress;
-        originalPrologue = Memory.get(originalAddress,
-                instructionHelper.sizeOfDirectJump());
+        this.quickCompiledCodeSize = quickCompiledCodeSize;
+
+        originalPrologue = Memory.get(originalAddress, Math.min(quickCompiledCodeSize,
+                instructionHelper.sizeOfDirectJump()));
     }
 
     public int getHooksCount() {
@@ -89,10 +92,6 @@ public class HookPage {
         }
     }
 
-    private long getOriginalAddress() {
-        return originalAddress;
-    }
-
     public int getSize() {
         return instructionHelper.sizeOfTargetJump() * getHooksCount() + instructionHelper.sizeOfCallOriginal();
     }
@@ -105,8 +104,12 @@ public class HookPage {
             System.arraycopy(targetJump, 0, mainPage, offset, instructionHelper.sizeOfTargetJump());
             offset += instructionHelper.sizeOfTargetJump();
         }
-        byte[] callOriginal = instructionHelper.createCallOriginal(getOriginalAddress(), getOriginalPrologue());
-        System.arraycopy(callOriginal, 0, mainPage, offset, callOriginal.length);
+        if (quickCompiledCodeSize > instructionHelper.sizeOfDirectJump()) {
+            byte[] callOriginal = instructionHelper.createCallOriginal(originalAddress, originalPrologue);
+            System.arraycopy(callOriginal, 0, mainPage, offset, callOriginal.length);
+        } else {
+            System.arraycopy(originalPrologue, 0, mainPage, offset, originalPrologue.length);
+        }
         return mainPage;
     }
 
@@ -126,10 +129,6 @@ public class HookPage {
     protected void finalize() throws Throwable {
         deallocate();
         super.finalize();
-    }
-
-    private byte[] getOriginalPrologue() {
-        return originalPrologue;
     }
 
     public static class Hook {

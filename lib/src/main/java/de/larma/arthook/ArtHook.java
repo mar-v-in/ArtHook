@@ -58,8 +58,8 @@ public final class ArtHook {
         long originalEntryPoint = INSTRUCTION_SET_HELPER.toMem(
                 original.getEntryPointFromQuickCompiledCode());
         if (!pages.containsKey(originalEntryPoint)) {
-            pages.put(originalEntryPoint,
-                    new HookPage(INSTRUCTION_SET_HELPER, originalEntryPoint));
+            pages.put(originalEntryPoint, new HookPage(INSTRUCTION_SET_HELPER,
+                    originalEntryPoint, getQuickCompiledCodeSize(original)));
         }
 
         HookPage page = pages.get(originalEntryPoint);
@@ -133,19 +133,14 @@ public final class ArtHook {
     }
 
     private static ArtMethod hook(ArtMethod original, ArtMethod replacement) {
-        if (getQuickCompiledCodeSize(original) < INSTRUCTION_SET_HELPER.sizeOfDirectJump()) {
-            DebugHelper.logw("Can't hook " + original + ", size " +
-                    getQuickCompiledCodeSize(original) + " is to small (required: " +
-                    INSTRUCTION_SET_HELPER.sizeOfDirectJump() + ")");
-            return original;
-        }
-
         HookPage page = handleHookPage(original, replacement);
-
         ArtMethod backArt = original.clone();
         backArt.makePrivate();
-
-        page.activate();
+        if (getQuickCompiledCodeSize(original) < INSTRUCTION_SET_HELPER.sizeOfDirectJump()) {
+            original.setEntryPointFromQuickCompiledCode(page.getCallHook());
+        } else {
+            page.activate();
+        }
         return backArt;
     }
 
