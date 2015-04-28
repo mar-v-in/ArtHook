@@ -44,7 +44,13 @@ public final class Native {
     public static boolean is64Bit() {
         if (sixtyFour == null)
             try {
-                sixtyFour = (Boolean) Class.forName("dalvik.system.VMRuntime").getDeclaredMethod("is64Bit").invoke(Class.forName("dalvik.system.VMRuntime").getDeclaredMethod("getRuntime").invoke(null));
+                final Class<?> vmClass = Class.forName("dalvik.system.VMRuntime");
+                final Object runtime = vmClass.getDeclaredMethod("getRuntime").invoke(null);
+                try {
+                    sixtyFour = (Boolean) vmClass.getDeclaredMethod("is64Bit").invoke(runtime);
+                } catch (NoSuchMethodException e) {
+                    sixtyFour = false;
+                }
             } catch (Exception e) {
                 throw new RuntimeException("Can't determine int size number!", e);
             }
