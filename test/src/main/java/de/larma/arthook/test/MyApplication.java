@@ -21,6 +21,7 @@ import de.larma.arthook.OriginalMethod;
 public class MyApplication extends Application {
 
     private static final String TAG = "MyApplication";
+    public static boolean madePiece = false;
 
     @Override
     public void onCreate() {
@@ -44,6 +45,7 @@ public class MyApplication extends Application {
             Log.d("MyApplication", "Time:" + System.currentTimeMillis());
             Log.d("MyApplication", "BackupTime:" + OriginalMethod.byOriginal(System.class
                     .getDeclaredMethod("currentTimeMillis")).invokeStatic());
+            pieceGame();
         } catch (Exception e) {
             Log.w(TAG, e);
         }
@@ -58,6 +60,13 @@ public class MyApplication extends Application {
     }
 
     public void pieceGame() {
+        Log.d(TAG, "broken pieceGame()");
+    }
+
+    @Hook("de.larma.arthook.test.MyApplication->pieceGame")
+    public void fix_pieceGame() {
+        Log.d(TAG, "fixed pieceGame()");
+        madePiece = true;
     }
 
     @Hook("android.net.sip.SipAudioCall->startAudio")
@@ -75,7 +84,7 @@ public class MyApplication extends Application {
         OriginalMethod.by(new $() {}).invoke(activity, layoutResID);
         Log.d(TAG, "after Original[Activity.setContentView]");
         TextView text = ((TextView) activity.findViewById(R.id.helloWorldText));
-        text.append("\n -- I am god");
+        text.append("\n -- I am god and made " + (madePiece ? "piece" : "war"));
         text.append("\n " + new Date().toString());
         Log.d(TAG, "end Hook[Activity.setContentView]");
     }

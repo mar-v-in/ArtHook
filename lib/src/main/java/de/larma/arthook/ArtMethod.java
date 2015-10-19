@@ -32,6 +32,7 @@ import static android.os.Build.VERSION_CODES.LOLLIPOP_MR1;
  * There might exist multiple instances of this helper class at the same time, but
  * {@link #hashCode()} is the same for all of them
  */
+@SuppressWarnings("JavadocReference")
 public class ArtMethod {
     private static final String ART_METHOD_CLASS_NAME = "java.lang.reflect.ArtMethod";
     private static final String ABSTRACT_METHOD_CLASS_NAME = "java.lang.reflect.AbstractMethod";
@@ -139,7 +140,7 @@ public class ArtMethod {
         if (Native.is64Bit()) {
             return ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN).getLong();
         } else {
-            return ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN).getInt();
+            return ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN).getInt() & 0xFFFFFFFFL;
         }
     }
 
