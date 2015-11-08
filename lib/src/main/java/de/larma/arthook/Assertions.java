@@ -21,8 +21,9 @@ public final class Assertions {
     private Assertions() {
     }
 
-    public static void argumentNotNull(Object o, String name) {
+    public static <T> T argumentNotNull(T o, String name) {
         if (o == null)
             throw new IllegalArgumentException(name + " must not be null");
+        return o;
     }
 }

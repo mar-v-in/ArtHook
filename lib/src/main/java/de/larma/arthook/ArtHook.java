@@ -42,8 +42,8 @@ public final class ArtHook {
         try {
             boolean isArm = true; // TODO: logic
             if (isArm) {
-                if ((ArtMethod.of(ArtMethod.class.getDeclaredMethod("of",
-                        Method.class)).getEntryPointFromQuickCompiledCode() & 1) == 1) {
+                if ((ArtMethod.of(ArtMethod.class.getDeclaredMethod("of", Method.class))
+                        .getEntryPointFromQuickCompiledCode() & 1) == 1) {
                     INSTRUCTION_SET_HELPER = new Thumb2();
                 } else {
                     INSTRUCTION_SET_HELPER = new Arm32();
@@ -58,8 +58,8 @@ public final class ArtHook {
         long originalEntryPoint = INSTRUCTION_SET_HELPER.toMem(
                 original.getEntryPointFromQuickCompiledCode());
         if (!pages.containsKey(originalEntryPoint)) {
-            pages.put(originalEntryPoint, new HookPage(INSTRUCTION_SET_HELPER,
-                    originalEntryPoint, getQuickCompiledCodeSize(original)));
+            pages.put(originalEntryPoint, new HookPage(INSTRUCTION_SET_HELPER, originalEntryPoint,
+                    getQuickCompiledCodeSize(original)));
         }
 
         HookPage page = pages.get(originalEntryPoint);
@@ -69,8 +69,7 @@ public final class ArtHook {
     }
 
     public static void hook(Class clazz) {
-        Assertions.argumentNotNull(clazz, "clazz");
-        for (Method method : clazz.getDeclaredMethods()) {
+        for (Method method : Assertions.argumentNotNull(clazz, "clazz").getDeclaredMethods()) {
             if (method.isAnnotationPresent(Hook.class)) {
                 try {
                     hook(method);
@@ -98,11 +97,10 @@ public final class ArtHook {
         return hook(original, method, ident);
     }
 
-    public static OriginalMethod hook(Method originalMethod, Method replacementMethod,
-                                      String backupIdentifier) {
+    public static OriginalMethod hook(Method originalMethod, Method replacementMethod, String backupIdentifier) {
         ArtMethod backArt = hook(originalMethod, replacementMethod);
 
-        Method backupMethod = backArt.newMethod();
+        Method backupMethod = (Method) backArt.getAssociatedMethod();
         backupMethod.setAccessible(true);
         OriginalMethod.store(originalMethod, backupMethod, backupIdentifier);
 
@@ -113,11 +111,9 @@ public final class ArtHook {
         Assertions.argumentNotNull(originalMethod, "originalMethod");
         Assertions.argumentNotNull(replacementMethod, "replacementMethod");
         if (originalMethod == replacementMethod || originalMethod.equals(replacementMethod))
-            throw new IllegalArgumentException("originalMethod and replacementMethod can't be the" +
-                    " same");
+            throw new IllegalArgumentException("originalMethod and replacementMethod can't be the same");
         if (!replacementMethod.getReturnType().isAssignableFrom(originalMethod.getReturnType()))
-            throw new IllegalArgumentException(
-                    "return types of originalMethod and replacementMethod do not match");
+            throw new IllegalArgumentException("return types of originalMethod and replacementMethod do not match");
 
         return hook(ArtMethod.of(originalMethod), ArtMethod.of(replacementMethod));
     }
@@ -126,8 +122,7 @@ public final class ArtHook {
         Assertions.argumentNotNull(originalMethod, "originalMethod");
         Assertions.argumentNotNull(replacementMethod, "replacementMethod");
         if (replacementMethod.getReturnType() != Void.TYPE)
-            throw new IllegalArgumentException(
-                    "return types of replacementMethod has to be 'void'");
+            throw new IllegalArgumentException("return types of replacementMethod has to be 'void'");
 
         return hook(ArtMethod.of(originalMethod), ArtMethod.of(replacementMethod));
     }
@@ -151,21 +146,18 @@ public final class ArtHook {
         return ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN).getInt();
     }
 
-    static Method findTargetMethod(Method method)
-            throws NoSuchMethodException, ClassNotFoundException {
+    static Method findTargetMethod(Method method) throws NoSuchMethodException, ClassNotFoundException {
         Hook hook = method.getAnnotation(Hook.class);
         String[] split = hook.value().split("->");
-        return findTargetMethod(method, Class.forName(split[0]),
-                split.length == 1 ? method.getName() : split[1]);
+        return findTargetMethod(method, Class.forName(split[0]), split.length == 1 ? method.getName() : split[1]);
     }
 
-    private static Method findTargetMethod(Method method, Class<?> targetClass,
-                                           String methodName) throws NoSuchMethodException {
+    private static Method findTargetMethod(Method method, Class<?> targetClass, String methodName)
+            throws NoSuchMethodException {
         Class<?>[] params = null;
         if (method.getParameterTypes().length > 0) {
             params = new Class<?>[method.getParameterTypes().length - 1];
-            System.arraycopy(method.getParameterTypes(), 1, params, 0,
-                    method.getParameterTypes().length - 1);
+            System.arraycopy(method.getParameterTypes(), 1, params, 0, method.getParameterTypes().length - 1);
         }
         try {
             Method m = targetClass.getDeclaredMethod(methodName, method.getParameterTypes());

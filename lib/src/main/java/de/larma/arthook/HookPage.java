@@ -21,6 +21,8 @@ import java.util.Set;
 
 import de.larma.arthook.instrs.InstructionHelper;
 
+import static de.larma.arthook.DebugHelper.logd;
+
 /**
  * Represents and manages a memory page for a hooked method.
  * Methods that share the same memory also share the same HookPage.
@@ -43,8 +45,7 @@ public class HookPage {
     private int quickCompiledCodeSize;
 
     public HookPage(InstructionHelper instructionHelper, long originalAddress, int quickCompiledCodeSize) {
-        Assertions.argumentNotNull(instructionHelper, "instructionHelper");
-        this.instructionHelper = instructionHelper;
+        this.instructionHelper = Assertions.argumentNotNull(instructionHelper, "instructionHelper");
         this.originalAddress = originalAddress;
         this.quickCompiledCodeSize = quickCompiledCodeSize;
 
@@ -61,8 +62,7 @@ public class HookPage {
     }
 
     public void addHook(Hook hook) {
-        Assertions.argumentNotNull(hook, "hook");
-        hooks.add(hook);
+        hooks.add(Assertions.argumentNotNull(hook, "hook"));
     }
 
     private long getBaseAddress() {
@@ -115,12 +115,12 @@ public class HookPage {
 
     public void update() {
         byte[] page = create();
-        DebugHelper.logd("Writing HookPage for " + hooks.iterator().next().src);
+        logd("Writing HookPage for " + hooks.iterator().next().src);
         Memory.put(page, getBaseAddress());
     }
 
     public void activate() {
-        DebugHelper.logd("Writing hook to " + DebugHelper.intHex(getCallHook()) + " in " + DebugHelper.intHex(originalAddress));
+        logd("Writing hook to " + DebugHelper.intHex(getCallHook()) + " in " + DebugHelper.intHex(originalAddress));
         Memory.unprotect(originalAddress, instructionHelper.sizeOfDirectJump());
         Memory.put(instructionHelper.createDirectJump(getCallHook()), originalAddress);
     }
@@ -136,10 +136,8 @@ public class HookPage {
         public final ArtMethod target;
 
         public Hook(ArtMethod src, ArtMethod target) {
-            Assertions.argumentNotNull(src, "src");
-            Assertions.argumentNotNull(target, "target");
-            this.src = src;
-            this.target = target;
+            this.src = Assertions.argumentNotNull(src, "src");
+            this.target = Assertions.argumentNotNull(target, "target");
         }
     }
 }
