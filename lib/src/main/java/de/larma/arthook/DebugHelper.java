@@ -22,7 +22,7 @@ import java.lang.reflect.Method;
 
 public final class DebugHelper {
     private static final String TAG = "ArtHook";
-    private static final int HEXDUMP_BYTES_PER_LINE = 16;
+    private static final long HEXDUMP_BYTES_PER_LINE = 16;
 
     public static boolean DEBUG = true;
     public static boolean WARN = true;
@@ -38,10 +38,10 @@ public final class DebugHelper {
         return String.format("%02X", b);
     }
 
-    public static String hexdump(byte[] bytes, int start) {
+    public static String hexdump(byte[] bytes, long start) {
         StringBuilder sb = new StringBuilder();
-        for (int i = 0 - start % HEXDUMP_BYTES_PER_LINE; i < bytes.length; i++) {
-            int num = Math.abs((start + i) % HEXDUMP_BYTES_PER_LINE);
+        for (int i = 0 - (int) (start % HEXDUMP_BYTES_PER_LINE); i < bytes.length; i++) {
+            long num = Math.abs((start + i) % HEXDUMP_BYTES_PER_LINE);
             if (num == 0 && sb.length() > 0)
                 sb.append("\r\n");
             if (num == 0)

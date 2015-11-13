@@ -19,6 +19,7 @@ package de.larma.arthook;
 import static de.larma.arthook.DebugHelper.hexdump;
 import static de.larma.arthook.DebugHelper.intHex;
 import static de.larma.arthook.DebugHelper.logd;
+import static de.larma.arthook.Native.memcpy;
 import static de.larma.arthook.Native.memget;
 import static de.larma.arthook.Native.memput;
 import static de.larma.arthook.Native.mmap;
@@ -44,19 +45,24 @@ public final class Memory {
 
     public static void put(byte[] bytes, long dest) {
         logd(TAG, "Writing memory to: " + intHex(dest));
-        logd(TAG, hexdump(bytes, (int) dest));
+        logd(TAG, hexdump(bytes, dest));
         memput(bytes, dest);
     }
 
     public static byte[] get(long src, int length) {
-        logd(TAG, "Reading memory from: " + intHex(src));
+        logd(TAG, "Reading " + length + " bytes from: " + intHex(src));
         byte[] bytes = memget(src, length);
-        logd(TAG, hexdump(bytes, (int) src));
+        logd(TAG, hexdump(bytes, src));
         return bytes;
     }
 
     public static void unprotect(long addr, long len) {
         logd(TAG, "Disabling mprotect from " + intHex(addr));
         munprotect(addr, len);
+    }
+
+    public static void copy(long src, long dst, int length) {
+        logd(TAG, "Copy " + length + " bytes form " + intHex(src) + " to " + intHex(dst));
+        memcpy(src, dst, length);
     }
 }
