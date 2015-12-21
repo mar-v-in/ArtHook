@@ -24,6 +24,11 @@ import java.nio.ByteOrder;
 public class Arm32 extends InstructionHelper {
 
     @Override
+    public int sizeOfDirectJump() {
+        return 8;
+    }
+
+    @Override
     public byte[] createDirectJump(long targetAddress) {
         byte[] instructions = new byte[] {
                 0x04, (byte) 0xf0, 0x1f, (byte) 0xe5,   // ldr pc, [pc, #-4]
@@ -32,11 +37,6 @@ public class Arm32 extends InstructionHelper {
         writeInt((int) targetAddress, ByteOrder.LITTLE_ENDIAN, instructions,
                 instructions.length - 4);
         return instructions;
-    }
-
-    @Override
-    public int sizeOfDirectJump() {
-        return 8;
     }
 
     @Override

@@ -57,6 +57,16 @@ public final class Unsafe {
     }
 
     @SuppressWarnings("unchecked")
+    public static int arrayIndexScale(Class cls) {
+        try {
+            return (int) unsafeClass.getDeclaredMethod("arrayIndexScale", Class.class).invoke(unsafe, cls);
+        } catch (Exception e) {
+            Log.w(TAG, e);
+            return 0;
+        }
+    }
+
+    @SuppressWarnings("unchecked")
     public static long objectFieldOffset(Field field) {
         try {
             return (long) unsafeClass.getDeclaredMethod("objectFieldOffset", Field.class).invoke(unsafe, field);
@@ -98,7 +108,7 @@ public final class Unsafe {
     public static long getObjectAddress(Object obj) {
         try {
             Object[] array = new Object[]{obj};
-            if (Native.is64Bit()) {
+            if (arrayIndexScale(Object[].class) == 8) {
                 return getLong(array, arrayBaseOffset(Object[].class));
             } else {
                 return getInt(array, arrayBaseOffset(Object[].class));

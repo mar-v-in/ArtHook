@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import de.larma.arthook.instrs.Arm32;
+import de.larma.arthook.instrs.Arm64;
 import de.larma.arthook.instrs.InstructionHelper;
 import de.larma.arthook.instrs.Thumb2;
 
@@ -42,8 +43,10 @@ public final class ArtHook {
         try {
             boolean isArm = true; // TODO: logic
             if (isArm) {
-                if ((ArtMethod.of(ArtMethod.class.getDeclaredMethod("of", Method.class))
-                        .getEntryPointFromQuickCompiledCode() & 1) == 1) {
+                if (Native.is64Bit()) {
+                    INSTRUCTION_SET_HELPER = new Arm64();
+                } else if ((ArtMethod.of(ArtMethod.class.getDeclaredMethod("of",
+                        Method.class)).getEntryPointFromQuickCompiledCode() & 1) == 1) {
                     INSTRUCTION_SET_HELPER = new Thumb2();
                 } else {
                     INSTRUCTION_SET_HELPER = new Arm32();
@@ -134,7 +137,10 @@ public final class ArtHook {
         if (getQuickCompiledCodeSize(original) < INSTRUCTION_SET_HELPER.sizeOfDirectJump()) {
             original.setEntryPointFromQuickCompiledCode(page.getCallHook());
         } else {
-            page.activate();
+            boolean result = page.activate();
+            if (!result) {
+                return null;
+            }
         }
         return backArt;
     }

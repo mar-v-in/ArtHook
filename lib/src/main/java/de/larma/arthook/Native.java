@@ -27,7 +27,7 @@ public final class Native {
 
     public static native long mmap(int length);
 
-    public static native void munmap(long address, int length);
+    public static native boolean munmap(long address, int length);
 
     public static native void memcpy(long src, long dest, int length);
 
@@ -35,7 +35,7 @@ public final class Native {
 
     public static native byte[] memget(long src, int length);
 
-    public static native void munprotect(long addr, long len);
+    public static native boolean munprotect(long addr, long len);
 
     public static native void ptrace(int pid);
 
