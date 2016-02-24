@@ -111,9 +111,10 @@ public final class Unsafe {
             if (arrayIndexScale(Object[].class) == 8) {
                 return getLong(array, arrayBaseOffset(Object[].class));
             } else {
-                return getInt(array, arrayBaseOffset(Object[].class));
+                return 0xffffffffL & getInt(array, arrayBaseOffset(Object[].class));
             }
         } catch (Exception e) {
+            Log.w(TAG, e);
             return -1;
         }
     }
