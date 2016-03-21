@@ -30,8 +30,20 @@ public final class DebugHelper {
     private DebugHelper() {
     }
 
-    public static String intHex(long i) {
-        return String.format("0x%08X", (int) i);
+    public static String addrHex(long i) {
+        if (Native.is64Bit()) {
+            return longHex(i);
+        } else {
+            return intHex((int) i);
+        }
+    }
+
+    public static String longHex(long i) {
+        return String.format("0x%016X", i);
+    }
+
+    public static String intHex(int i) {
+        return String.format("0x%08X", i);
     }
 
     public static String byteHex(byte b) {
@@ -43,9 +55,9 @@ public final class DebugHelper {
         for (int i = 0 - (int) (start % HEXDUMP_BYTES_PER_LINE); i < bytes.length; i++) {
             long num = Math.abs((start + i) % HEXDUMP_BYTES_PER_LINE);
             if (num == 0 && sb.length() > 0)
-                sb.append("\r\n");
+                sb.append('\n');
             if (num == 0)
-                sb.append(intHex(start + i)).append(": ");
+                sb.append(addrHex(start + i)).append(": ");
             if (num == 8)
                 sb.append(" ");
             if (i >= 0)
@@ -74,7 +86,7 @@ public final class DebugHelper {
 
     public static String methodDescription(Method method) {
         return method.getDeclaringClass().getName() + "->" + method.getName() + " @" +
-                intHex(ArtMethod.of(method).getEntryPointFromQuickCompiledCode()) +
-                " +" + intHex(ArtMethod.of(method).getAddress());
+                addrHex(ArtMethod.of(method).getEntryPointFromQuickCompiledCode()) +
+                " +" + addrHex(ArtMethod.of(method).getAddress());
     }
 }

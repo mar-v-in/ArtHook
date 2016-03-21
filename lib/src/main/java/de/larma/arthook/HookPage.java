@@ -43,6 +43,7 @@ public class HookPage {
     private int allocatedSize;
     private long allocatedAddress;
     private int quickCompiledCodeSize;
+    private boolean active;
 
     public HookPage(InstructionHelper instructionHelper, long originalAddress, int quickCompiledCodeSize) {
         this.instructionHelper = Assertions.argumentNotNull(instructionHelper, "instructionHelper");
@@ -88,7 +89,10 @@ public class HookPage {
             Memory.unmap(allocatedAddress, allocatedSize);
             allocatedAddress = 0;
             allocatedSize = 0;
-            Memory.put(originalPrologue, originalAddress);
+
+            if (active) {
+                Memory.put(originalPrologue, originalAddress);
+            }
         }
     }
 
@@ -119,10 +123,18 @@ public class HookPage {
         Memory.put(page, getBaseAddress());
     }
 
-    public void activate() {
-        logd("Writing hook to " + DebugHelper.intHex(getCallHook()) + " in " + DebugHelper.intHex(originalAddress));
-        Memory.unprotect(originalAddress, instructionHelper.sizeOfDirectJump());
-        Memory.put(instructionHelper.createDirectJump(getCallHook()), originalAddress);
+    public boolean activate() {
+        logd("Writing hook to " + DebugHelper.addrHex(getCallHook()) + " in " + DebugHelper.addrHex(originalAddress));
+        boolean result = Memory.unprotect(originalAddress, instructionHelper.sizeOfDirectJump());
+        if (result) {
+            Memory.put(instructionHelper.createDirectJump(getCallHook()), originalAddress);
+            active = true;
+            return true;
+        } else {
+            DebugHelper.logw("Writing hook failed: Unable to unprotect memory at " + DebugHelper.addrHex(originalAddress) + "!");
+            active = false;
+            return false;
+        }
     }
 
     @Override

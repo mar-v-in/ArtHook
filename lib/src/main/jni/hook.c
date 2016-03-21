@@ -23,14 +23,16 @@
 
 #define LOGV(...)  ((void)__android_log_print(ANDROID_LOG_VERBOSE, "ArtHook_native", __VA_ARGS__))
 
-JNIEXPORT void JNICALL Java_de_larma_arthook_Native_munprotect(JNIEnv *env, jclass _cls, jlong addr, jlong len) {
+JNIEXPORT jboolean JNICALL Java_de_larma_arthook_Native_munprotect(JNIEnv *env, jclass _cls, jlong addr, jlong len) {
     int pagesize = sysconf(_SC_PAGESIZE);
     int alignment = (addr%pagesize);
 
     int i = mprotect((void *)(addr-alignment), (size_t)(len+alignment), PROT_READ | PROT_WRITE | PROT_EXEC);
     if (i == -1) {
-        LOGV("mprotect failed: %d", errno);
+        LOGV("mprotect failed: %s (%d)", strerror(errno), errno);
+        return JNI_FALSE;
     }
+    return JNI_TRUE;
 }
 
 JNIEXPORT void JNICALL Java_de_larma_arthook_Native_memcpy(JNIEnv *env, jclass _cls, jlong src, jlong dest, jint length) {
@@ -68,17 +70,19 @@ JNIEXPORT jbyteArray JNICALL Java_de_larma_arthook_Native_memget(JNIEnv *env, jc
 JNIEXPORT jlong JNICALL Java_de_larma_arthook_Native_mmap(JNIEnv *env, jclass _cls, jint length) {
     unsigned char *space = mmap(0, length, PROT_READ|PROT_WRITE|PROT_EXEC, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
     if (space == MAP_FAILED) {
-        LOGV("mmap failed: %d",errno);
+        LOGV("mmap failed: %s (%d)", strerror(errno), errno);
         return 0;
     }
     return (jlong) space;
 }
 
-JNIEXPORT void JNICALL Java_de_larma_arthook_Native_munmap(JNIEnv *env, jclass _cls, jlong addr, jint length) {
+JNIEXPORT jboolean JNICALL Java_de_larma_arthook_Native_munmap(JNIEnv *env, jclass _cls, jlong addr, jint length) {
     int r = munmap((void*)addr, length);
     if (r == -1) {
-        LOGV("munmap failed: %d",errno);
+        LOGV("munmap failed: %s (%d)", strerror(errno), errno);
+        return JNI_FALSE;
     }
+    return JNI_TRUE;
 }
 
 JNIEXPORT void JNICALL Java_de_larma_arthook_Native_ptrace(JNIEnv* env, jclass _cls, jint pid) {

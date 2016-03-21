@@ -28,7 +28,7 @@ import static android.os.Build.VERSION.SDK_INT;
 import static android.os.Build.VERSION_CODES.LOLLIPOP;
 import static android.os.Build.VERSION_CODES.LOLLIPOP_MR1;
 import static android.os.Build.VERSION_CODES.M;
-import static de.larma.arthook.DebugHelper.intHex;
+import static de.larma.arthook.DebugHelper.addrHex;
 import static de.larma.arthook.DebugHelper.logd;
 
 /**
@@ -53,13 +53,13 @@ public class ArtMethod {
     private static final String FIELD_ENTRY_POINT_FROM_QUICK_COMPILED_CODE = "entryPointFromQuickCompiledCode";
     private static final int FIELD_ENTRY_POINT_FROM_QUICK_COMPILED_CODE_NATIVE_INDEX = 2;
 
-    private static final int LMR1_MIRROR_FIELDS = 36;
+    private static final int LMR1_MIRROR_FIELDS = Native.is64Bit() ? 40 : 36;
     private static final int LMR1_NATIVE_FIELDS_32 = 12;
     private static final int LMR1_NATIVE_FIELDS_64 = 24;
     private static final int LMR1_NATIVE_FIELDS = Native.is64Bit() ? LMR1_NATIVE_FIELDS_64 : LMR1_NATIVE_FIELDS_32;
     private static final int LMR1_OBJECT_SIZE = LMR1_NATIVE_FIELDS + LMR1_MIRROR_FIELDS;
 
-    private static final int M_MIRROR_FIELDS = 28;
+    private static final int M_MIRROR_FIELDS = Native.is64Bit() ? 32 : 28;
     private static final int M_NATIVE_FIELDS_32 = 12;
     private static final int M_NATIVE_FIELDS_64 = 24;
     private static final int M_NATIVE_FIELDS = Native.is64Bit() ? M_NATIVE_FIELDS_64 : M_NATIVE_FIELDS_32;
@@ -274,6 +274,8 @@ public class ArtMethod {
                         DebugHelper.logw(e);
                     }
                 }*/
+
+                // Copy fields of java.lang.reflect.ArtMethod (this.artMethod => clone.artMethod)
                 for (Field field : Class.forName(ART_METHOD_CLASS_NAME).getDeclaredFields()) {
                     field.setAccessible(true);
                     clone.set(field, get(field));
@@ -283,41 +285,150 @@ public class ArtMethod {
                     clone.setEntryPointFromJni(getEntryPointFromJni());
                     clone.setEntryPointFromQuickCompiledCode(getEntryPointFromQuickCompiledCode());
                 }
+                clone.associatedMethod = newAssociatedMethodL(associatedMethod, clone.artMethod);
             } else if (VERSION_M) {
                 Memory.copy((long) artMethod, (long) clone.artMethod, M_OBJECT_SIZE);
-                clone.associatedMethod = associatedMethod;
+                clone.associatedMethod = newAssociatedMethodM(associatedMethod, clone.artMethod);
             }
-            clone.associatedMethod = clone.newMethod();
             return clone;
         } catch (Exception e) {
             throw new RuntimeException("Clone not supported", e);
         }
     }
 
-    private Method newMethod() {
+    /**
+     * Creates a new {@link java.lang.reflect.Constructor}/{@link java.lang.reflect.Method} object with the given {@link java.lang.reflect.ArtMethod}.
+     * <p/>
+     * <strong>Only available on Android L.</strong>
+     *
+     * @param associatedMethod The former associated method or constructor (only used to decide if we need a constructor or method).
+     * @param artMethod        The artMethod object (has to be of type {@link java.lang.reflect.ArtMethod}).
+     * @return The new constructor or method object.
+     */
+    private static Object newAssociatedMethodL(Object associatedMethod, Object artMethod) {
+        if (associatedMethod instanceof Method) {
+            return newMethodL(artMethod);
+        } else if (associatedMethod instanceof Constructor<?>) {
+            return newConstructorL(artMethod);
+        }
+        throw new IllegalArgumentException("associatedMethod has to be instance of Method or Constructor, was " + associatedMethod + ".");
+    }
+
+    /**
+     * Creates a new {@link java.lang.reflect.Method} object with the given {@link java.lang.reflect.ArtMethod}.
+     * <p/>
+     * <strong>Only available on Android L.</strong>
+     *
+     * @param artMethod The artMethod object (has to be of type {@link java.lang.reflect.ArtMethod}).
+     * @return The new method object.
+     */
+    private static Method newMethodL(Object artMethod) {
         try {
-            if (VERSION_L) {
-                Method m = Method.class.getConstructor(Class.forName(ART_METHOD_CLASS_NAME)).newInstance(artMethod);
-                m.setAccessible(true);
-                return m;
-            } else if (VERSION_M) {
-                // TODO
-                Constructor<Method> constructor = Method.class.getDeclaredConstructor();
-                // we can't use constructor.setAccessible(true); because Google does not like it
-                AccessibleObject.setAccessible(new AccessibleObject[]{constructor}, true);
-                Method m = constructor.newInstance();
-                m.setAccessible(true);
-                for (Field field : Class.forName(ABSTRACT_METHOD_CLASS_NAME).getDeclaredFields()) {
-                    field.setAccessible(true);
-                    field.set(m, field.get(associatedMethod));
-                }
-                Field artMethodField = Class.forName(ABSTRACT_METHOD_CLASS_NAME).getDeclaredField(FIELD_ART_METHOD);
-                artMethodField.setAccessible(true);
-                artMethodField.set(m, artMethod);
-                return m;
-            } else {
-                throw new RuntimeException("Method creation not supported on this platform");
+            Method m = Method.class.getConstructor(Class.forName(ART_METHOD_CLASS_NAME)).newInstance(artMethod);
+            m.setAccessible(true);
+            return m;
+        } catch (Throwable t) {
+            throw new RuntimeException("Can't create new Method.", t);
+        }
+    }
+
+    /**
+     * Creates a new {@link java.lang.reflect.Constructor} object with the given {@link java.lang.reflect.ArtMethod}.
+     * <p/>
+     * <strong>Only available on Android L.</strong>
+     *
+     * @param artMethod The artMethod object (has to be of type {@link java.lang.reflect.ArtMethod}).
+     * @return The new constructor object.
+     */
+    private static Constructor<?> newConstructorL(Object artMethod) {
+        try {
+            Constructor<?> c = Constructor.class.getConstructor(Class.forName(ART_METHOD_CLASS_NAME)).newInstance(artMethod);
+            c.setAccessible(true);
+            return c;
+        } catch (Throwable t) {
+            throw new RuntimeException("Can't create new Constructor.", t);
+        }
+    }
+
+    /**
+     * Creates a new {@link java.lang.reflect.Method}/{@link java.lang.reflect.Constructor} object with the given artMethod address.
+     * <p/>
+     * <strong>Only available on Android M.</strong>
+     *
+     * @param associatedMethod The associated method or constructor to copy.
+     * @param artMethod        The artMethod address (has to be of type {@link java.lang.Long}).
+     * @return The new method object.
+     */
+    private static Object newAssociatedMethodM(Object associatedMethod, Object artMethodAddr) {
+        if (associatedMethod instanceof Method) {
+            return newMethodM(associatedMethod, artMethodAddr);
+        } else if (associatedMethod instanceof Constructor<?>) {
+            return newConstructorM(associatedMethod, artMethodAddr);
+        }
+        throw new IllegalArgumentException("associatedMethod has to be instance of Method or Constructor, was " + associatedMethod + ".");
+    }
+
+    /**
+     * Creates a new {@link java.lang.reflect.Method} object with the given artMethod address.
+     * <p/>
+     * <strong>Only available on Android M.</strong>
+     *
+     * @param associatedMethod The associated method to copy.
+     * @param artMethod        The artMethod address (has to be of type {@link java.lang.Long}).
+     * @return The new method object.
+     */
+    private static Method newMethodM(Object associatedMethod, Object artMethodAddr) {
+        try {
+            // TODO
+            Constructor<Method> methodConstructor = Method.class.getDeclaredConstructor();
+            // we can't use methodConstructor.setAccessible(true); because Google does not like it
+            AccessibleObject.setAccessible(new AccessibleObject[]{methodConstructor}, true);
+
+            Method m = methodConstructor.newInstance();
+            m.setAccessible(true);
+            for (Field field : Class.forName(ABSTRACT_METHOD_CLASS_NAME).getDeclaredFields()) {
+                field.setAccessible(true);
+                field.set(m, field.get(associatedMethod));
             }
+
+            Field artMethodField = Class.forName(ABSTRACT_METHOD_CLASS_NAME).getDeclaredField(FIELD_ART_METHOD);
+            artMethodField.setAccessible(true);
+            artMethodField.set(m, artMethodAddr);
+
+            return m;
+        } catch (Throwable t) {
+            throw new RuntimeException("Can't create new Method", t);
+        }
+    }
+
+    /**
+     * Creates a new {@link java.lang.reflect.Constructor} object with the given artMethod address.
+     * <p/>
+     * <strong>Only available on Android M.</strong>
+     *
+     * @param associatedMethod The associated constructor to copy.
+     * @param artMethod        The artMethod address (has to be of type {@link java.lang.Long}).
+     * @return The new constructor object.
+     */
+    private static Constructor<?> newConstructorM(Object associatedMethod, Object artMethodAddr) {
+        try {
+            // TODO
+            Constructor<Constructor> constructorConstructor = Constructor.class.getDeclaredConstructor();
+            // we can't use constructorConstructor.setAccessible(true); because Google does not like it
+            AccessibleObject.setAccessible(new AccessibleObject[]{constructorConstructor}, true);
+
+            Constructor<?> c = constructorConstructor.newInstance();
+            c.setAccessible(true);
+            for (Field field : Class.forName(ABSTRACT_METHOD_CLASS_NAME).getDeclaredFields()) {
+                field.setAccessible(true);
+                field.set(c, field.get(associatedMethod));
+            }
+
+            Field artMethodField = Class.forName(ABSTRACT_METHOD_CLASS_NAME).getDeclaredField(FIELD_ART_METHOD);
+            artMethodField.setAccessible(true);
+            artMethodField.set(c, artMethodAddr);
+
+            return c;
         } catch (Throwable t) {
             throw new RuntimeException("Can't create new Method", t);
         }
@@ -325,24 +436,6 @@ public class ArtMethod {
 
     public Object getAssociatedMethod() {
         return associatedMethod;
-    }
-
-    private Constructor<?> newConstructor() {
-        try {
-            if (VERSION_L) {
-                Constructor<?> c = Constructor.class.getConstructor(Class.forName(ART_METHOD_CLASS_NAME))
-                        .newInstance(artMethod);
-                c.setAccessible(true);
-                return c;
-            } else if (VERSION_M) {
-                // TODO
-                throw new RuntimeException("Method creation not yet supported on M");
-            } else {
-                throw new RuntimeException("Method creation not supported on this platform");
-            }
-        } catch (Throwable t) {
-            throw new RuntimeException("Can't create new Method", t);
-        }
     }
 
     public void setDexMethodIndex(int dexMethodIndex) {
@@ -382,7 +475,7 @@ public class ArtMethod {
     }
 
     public void makePrivate() {
-        setAccessFlags(getAccessFlags() | Modifier.PRIVATE & ~Modifier.PUBLIC & ~Modifier.PROTECTED);
+        setAccessFlags((getAccessFlags() | Modifier.PRIVATE) & ~Modifier.PUBLIC & ~Modifier.PROTECTED);
     }
 
     public void makeNative() {
@@ -408,17 +501,18 @@ public class ArtMethod {
         if (VERSION_L) {
             try {
                 field.set(artMethod, value);
-            } catch (IllegalAccessException ignored) {
+            } catch (IllegalAccessException e) {
+                throw new RuntimeException("Not supported on your platform", e);
             }
         } else if (VERSION_M) {
             try {
                 field.set(associatedMethod, value);
-            } catch (IllegalAccessException ignored) {
+            } catch (IllegalAccessException e) {
+                throw new RuntimeException("Not supported on your platform", e);
             }
         } else {
             throw new RuntimeException("Not supported on your platform");
         }
-
     }
 
     private Object get(Field field) {
@@ -426,13 +520,13 @@ public class ArtMethod {
             try {
                 return field.get(artMethod);
             } catch (IllegalAccessException e) {
-                return null;
+                throw new RuntimeException("Not supported on your platform", e);
             }
         } else if (VERSION_M) {
             try {
                 return field.get(associatedMethod);
             } catch (IllegalAccessException e) {
-                return null;
+                throw new RuntimeException("Not supported on your platform", e);
             }
         } else {
             throw new RuntimeException("Not supported on your platform");
@@ -464,7 +558,7 @@ public class ArtMethod {
     @Override
     public String toString() {
         return "ArtMethod{" + associatedMethod + ", intern=" + artMethod + ", " +
-                "entryPoint=" + intHex(getEntryPointFromQuickCompiledCode()) + "}";
+                "entryPoint=" + addrHex(getEntryPointFromQuickCompiledCode()) + "}";
     }
 
     @Override
@@ -477,5 +571,4 @@ public class ArtMethod {
     public int hashCode() {
         return artMethod.hashCode();
     }
-
 }

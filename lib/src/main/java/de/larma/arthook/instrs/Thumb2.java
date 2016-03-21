@@ -24,6 +24,11 @@ import java.nio.ByteOrder;
 public class Thumb2 extends InstructionHelper {
 
     @Override
+    public int sizeOfDirectJump() {
+        return 8;
+    }
+
+    @Override
     public byte[] createDirectJump(long targetAddress) {
         byte[] instructions = new byte[] {
                 (byte) 0xdf, (byte) 0xf8, 0x00, (byte) 0xf0,        // ldr pc, [pc]
@@ -35,8 +40,8 @@ public class Thumb2 extends InstructionHelper {
     }
 
     @Override
-    public int sizeOfDirectJump() {
-        return 8;
+    public int sizeOfTargetJump() {
+        return 28;
     }
 
     @Override
@@ -58,11 +63,6 @@ public class Thumb2 extends InstructionHelper {
         writeInt((int) hook.src.getAddress(), ByteOrder.LITTLE_ENDIAN, instructions,
                 instructions.length - 4);
         return instructions;
-    }
-
-    @Override
-    public int sizeOfTargetJump() {
-        return 28;
     }
 
     @Override

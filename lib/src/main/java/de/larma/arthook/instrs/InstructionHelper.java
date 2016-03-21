@@ -90,5 +90,9 @@ public abstract class InstructionHelper {
         System.arraycopy(ByteBuffer.allocate(4).order(order).putInt(i).array(), 0, target, pos, 4);
     }
 
+    protected static void writeLong(long i, ByteOrder order, byte[] target, int pos) {
+        System.arraycopy(ByteBuffer.allocate(8).order(order).putLong(i).array(), 0, target, pos, 8);
+    }
+
     public abstract String getName();
 }
