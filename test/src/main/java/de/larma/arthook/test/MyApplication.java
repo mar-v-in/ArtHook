@@ -75,6 +75,12 @@ public class MyApplication extends Application {
         OriginalMethod.by(new $() {}).invoke(call);
     }
 
+    @Hook("android.app.Activity-><init>")
+    public static void Activity_init(Activity a) {
+        Log.d(TAG, "Activity_init");
+        OriginalMethod.by(new $() {}).invoke(a);
+    }
+
     /**
      * Sample hook of a public member method
      */

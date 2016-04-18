@@ -85,9 +85,9 @@ public final class ArtHook {
 
     public static OriginalMethod hook(Method method) {
         if (!method.isAnnotationPresent(Hook.class))
-            throw new IllegalArgumentException("method must have MethodHook annotation");
+            throw new IllegalArgumentException("method must have @Hook annotation");
 
-        Method original;
+        Object original;
         try {
             original = findTargetMethod(method);
         } catch (Throwable e) {
@@ -101,7 +101,19 @@ public final class ArtHook {
     }
 
     public static OriginalMethod hook(Method originalMethod, Method replacementMethod, String backupIdentifier) {
-        ArtMethod backArt = hook(originalMethod, replacementMethod);
+        return hook((Object) originalMethod, replacementMethod, backupIdentifier);
+    }
+
+    public static OriginalMethod hook(Object originalMethod, Method replacementMethod, String backupIdentifier) {
+        ArtMethod backArt;
+        if (originalMethod instanceof Method) {
+            backArt = hook((Method) originalMethod, replacementMethod);
+        } else if (originalMethod instanceof Constructor) {
+            backArt = hook((Constructor<?>) originalMethod, replacementMethod);
+            backArt.convertToMethod();
+        } else {
+            throw new RuntimeException("original method must be of type Method or Constructor");
+        }
 
         Method backupMethod = (Method) backArt.getAssociatedMethod();
         backupMethod.setAccessible(true);
@@ -152,18 +164,22 @@ public final class ArtHook {
         return ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN).getInt();
     }
 
-    static Method findTargetMethod(Method method) throws NoSuchMethodException, ClassNotFoundException {
+    static Object findTargetMethod(Method method) throws NoSuchMethodException, ClassNotFoundException {
         Hook hook = method.getAnnotation(Hook.class);
         String[] split = hook.value().split("->");
         return findTargetMethod(method, Class.forName(split[0]), split.length == 1 ? method.getName() : split[1]);
     }
 
-    private static Method findTargetMethod(Method method, Class<?> targetClass, String methodName)
+    private static Object findTargetMethod(Method method, Class<?> targetClass, String methodName)
             throws NoSuchMethodException {
         Class<?>[] params = null;
         if (method.getParameterTypes().length > 0) {
             params = new Class<?>[method.getParameterTypes().length - 1];
             System.arraycopy(method.getParameterTypes(), 1, params, 0, method.getParameterTypes().length - 1);
+        }
+        if (methodName.equals("()") || methodName.equals("<init>")) {
+            // Constructor
+            return targetClass.getConstructor(params);
         }
         try {
             Method m = targetClass.getDeclaredMethod(methodName, method.getParameterTypes());

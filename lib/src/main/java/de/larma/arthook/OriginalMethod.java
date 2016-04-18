@@ -18,6 +18,7 @@ package de.larma.arthook;
 
 import android.util.Log;
 
+import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.HashMap;
@@ -53,7 +54,15 @@ public class OriginalMethod {
     }
 
     public static OriginalMethod byOriginal(Method original) {
-        return new OriginalMethod(backupMethods.get(ArtMethod.of(original)));
+        return byOriginal((Object) original);
+    }
+
+    public static OriginalMethod byOriginal(Constructor<?> original) {
+        return byOriginal((Object) original);
+    }
+
+    static OriginalMethod byOriginal(Object originalMethod) {
+        return new OriginalMethod(backupMethods.get(ArtMethod.of(originalMethod)));
     }
 
     public static OriginalMethod byHook(Method hook) {
@@ -102,6 +111,10 @@ public class OriginalMethod {
     }
 
     public static void store(Method originalMethod, Method backupMethod, String backupIdent) {
+        store((Object) originalMethod, backupMethod, backupIdent);
+    }
+
+    static void store(Object originalMethod, Method backupMethod, String backupIdent) {
         backupMethods.put(ArtMethod.of(originalMethod), backupMethod);
         if (backupIdent != null) {
             identifiedBackups.put(backupIdent, backupMethod);

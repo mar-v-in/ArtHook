@@ -128,7 +128,7 @@ public class ArtMethod {
      * @return A new helper for the ArtMethod
      * @throws java.lang.NullPointerException when the {@param method} is a null pointer
      */
-    private static ArtMethod of(Object method) {
+    static ArtMethod of(Object method) {
         if (method == null)
             return null;
         try {
@@ -431,6 +431,14 @@ public class ArtMethod {
             return c;
         } catch (Throwable t) {
             throw new RuntimeException("Can't create new Method", t);
+        }
+    }
+
+    public void convertToMethod() {
+        if (VERSION_L) {
+            associatedMethod = newMethodL(artMethod);
+        } else if (VERSION_M) {
+            associatedMethod = newMethodM(associatedMethod, artMethod);
         }
     }
 
