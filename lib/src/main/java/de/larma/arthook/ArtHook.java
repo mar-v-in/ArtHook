@@ -91,7 +91,7 @@ public final class ArtHook {
         try {
             original = findTargetMethod(method);
         } catch (Throwable e) {
-            throw new RuntimeException("Can't find original method", e);
+            throw new RuntimeException("Can't find original method (" + method.getName() + ")", e);
         }
         String ident = null;
         if (method.isAnnotationPresent(BackupIdentifier.class)) {
