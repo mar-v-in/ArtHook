@@ -64,9 +64,10 @@ public class MyApplication extends Application {
     }
 
     @Hook("de.larma.arthook.test.MyApplication->pieceGame")
-    public void fix_pieceGame() {
+    public static void fix_pieceGame(MyApplication app) {
         Log.d(TAG, "fixed pieceGame()");
         madePiece = true;
+        OriginalMethod.by(new $() {}).invoke(app);
     }
 
     @Hook("android.net.sip.SipAudioCall->startAudio")

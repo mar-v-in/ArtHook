@@ -50,8 +50,8 @@ public class HookPage {
         this.originalAddress = originalAddress;
         this.quickCompiledCodeSize = quickCompiledCodeSize;
 
-        originalPrologue = Memory.get(originalAddress, Math.min(quickCompiledCodeSize,
-                instructionHelper.sizeOfDirectJump()));
+        originalPrologue = Memory.get(originalAddress, quickCompiledCodeSize > 0 ? Math.min(quickCompiledCodeSize,
+                instructionHelper.sizeOfDirectJump()) : instructionHelper.sizeOfDirectJump());
     }
 
     public int getHooksCount() {
