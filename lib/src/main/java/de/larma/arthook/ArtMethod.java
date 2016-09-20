@@ -16,7 +16,6 @@
 
 package de.larma.arthook;
 
-import java.lang.reflect.AccessibleObject;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -24,10 +23,13 @@ import java.lang.reflect.Modifier;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
+import de.larma.arthook.avers.VersionHelper;
+
 import static android.os.Build.VERSION.SDK_INT;
 import static android.os.Build.VERSION_CODES.LOLLIPOP;
 import static android.os.Build.VERSION_CODES.LOLLIPOP_MR1;
 import static android.os.Build.VERSION_CODES.M;
+import static android.os.Build.VERSION_CODES.N;
 import static de.larma.arthook.DebugHelper.addrHex;
 import static de.larma.arthook.DebugHelper.logd;
 
@@ -43,35 +45,17 @@ public class ArtMethod {
     private static final String ABSTRACT_METHOD_CLASS_NAME = "java.lang.reflect.AbstractMethod";
     private static final String FIELD_ART_METHOD = "artMethod";
 
-    private static final String FIELD_ACCESS_FLAGS = "accessFlags";
-    private static final int FIELD_ACCESS_FLAGS_MIRROR_INDEX = 3;
-    private static final String FIELD_DEX_METHOD_INDEX = "dexMethodIndex";
-    private static final String FIELD_ENTRY_POINT_FROM_JNI = "entryPointFromJni";
-    private static final int FIELD_ENTRY_POINT_FROM_JNI_NATIVE_INDEX = 1;
-    private static final String FIELD_ENTRY_POINT_FROM_INTERPRETER = "entryPointFromInterpreter";
-    private static final int FIELD_ENTRY_POINT_FROM_INTERPRETER_NATIVE_INDEX = 0;
-    private static final String FIELD_ENTRY_POINT_FROM_QUICK_COMPILED_CODE = "entryPointFromQuickCompiledCode";
-    private static final int FIELD_ENTRY_POINT_FROM_QUICK_COMPILED_CODE_NATIVE_INDEX = 2;
+    public static final String FIELD_ACCESS_FLAGS = "accessFlags";
+    public static final String FIELD_DEX_METHOD_INDEX = "dexMethodIndex";
+    public static final String FIELD_ENTRY_POINT_FROM_JNI = "entryPointFromJni";
+    public static final String FIELD_ENTRY_POINT_FROM_INTERPRETER = "entryPointFromInterpreter";
+    public static final String FIELD_ENTRY_POINT_FROM_QUICK_COMPILED_CODE = "entryPointFromQuickCompiledCode";
 
-    private static final int LMR1_MIRROR_FIELDS = Native.is64Bit() ? 40 : 36;
-    private static final int LMR1_NATIVE_FIELDS_32 = 12;
-    private static final int LMR1_NATIVE_FIELDS_64 = 24;
-    private static final int LMR1_NATIVE_FIELDS = Native.is64Bit() ? LMR1_NATIVE_FIELDS_64 : LMR1_NATIVE_FIELDS_32;
-    private static final int LMR1_OBJECT_SIZE = LMR1_NATIVE_FIELDS + LMR1_MIRROR_FIELDS;
+    private static final boolean VERSION_L = SDK_INT == LOLLIPOP || SDK_INT == LOLLIPOP_MR1;
+    private static final boolean VERSION_M_PLUS = SDK_INT >= M;
 
-    private static final int M_MIRROR_FIELDS = Native.is64Bit() ? 32 : 28;
-    private static final int M_NATIVE_FIELDS_32 = 12;
-    private static final int M_NATIVE_FIELDS_64 = 24;
-    private static final int M_NATIVE_FIELDS = Native.is64Bit() ? M_NATIVE_FIELDS_64 : M_NATIVE_FIELDS_32;
-    private static final int M_OBJECT_SIZE = M_MIRROR_FIELDS + M_NATIVE_FIELDS;
-
-    private static final boolean VERSION_LMR0 = SDK_INT == LOLLIPOP;
-    private static final boolean VERSION_LMR1 = SDK_INT == LOLLIPOP_MR1;
-    private static final boolean VERSION_L = VERSION_LMR0 || VERSION_LMR1;
-    private static final boolean VERSION_M = SDK_INT >= M;
-
-    private final Object artMethod;
-    private Object associatedMethod;
+    public final Object artMethod;
+    public Object associatedMethod;
 
     /**
      * Create a new ArtMethod.
@@ -80,15 +64,7 @@ public class ArtMethod {
      */
     private ArtMethod() {
         try {
-            if (VERSION_L) {
-                Constructor constructor = Class.forName(ART_METHOD_CLASS_NAME).getDeclaredConstructor();
-                constructor.setAccessible(true);
-                artMethod = constructor.newInstance();
-            } else if (VERSION_M) {
-                artMethod = Memory.map(M_OBJECT_SIZE);
-            } else {
-                throw new RuntimeException("Platform not supported");
-            }
+            artMethod = VersionHelper.CURRENT.createArtMethod();
         } catch (Exception e) {
             throw new RuntimeException("Can't create new ArtMethod, is this a system running Art?", e);
         }
@@ -128,7 +104,7 @@ public class ArtMethod {
      * @return A new helper for the ArtMethod
      * @throws java.lang.NullPointerException when the {@param method} is a null pointer
      */
-    private static ArtMethod of(Object method) {
+    static ArtMethod of(Object method) {
         if (method == null)
             return null;
         try {
@@ -141,32 +117,7 @@ public class ArtMethod {
     }
 
     private Object get(String name) {
-        Object val = null;
-        if (VERSION_LMR1) {
-            switch (name) {
-                case FIELD_ENTRY_POINT_FROM_INTERPRETER:
-                    val = getLMR1Native(FIELD_ENTRY_POINT_FROM_INTERPRETER_NATIVE_INDEX);
-                    break;
-                case FIELD_ENTRY_POINT_FROM_JNI:
-                    val = getLMR1Native(FIELD_ENTRY_POINT_FROM_JNI_NATIVE_INDEX);
-                    break;
-                case FIELD_ENTRY_POINT_FROM_QUICK_COMPILED_CODE:
-                    val = getLMR1Native(FIELD_ENTRY_POINT_FROM_QUICK_COMPILED_CODE_NATIVE_INDEX);
-                    break;
-            }
-        } else if (VERSION_M) {
-            switch (name) {
-                case FIELD_ENTRY_POINT_FROM_INTERPRETER:
-                    val = getMNative(FIELD_ENTRY_POINT_FROM_INTERPRETER_NATIVE_INDEX, false);
-                    break;
-                case FIELD_ENTRY_POINT_FROM_JNI:
-                    val = getMNative(FIELD_ENTRY_POINT_FROM_JNI_NATIVE_INDEX, false);
-                    break;
-                case FIELD_ENTRY_POINT_FROM_QUICK_COMPILED_CODE:
-                    val = getMNative(FIELD_ENTRY_POINT_FROM_QUICK_COMPILED_CODE_NATIVE_INDEX, false);
-                    break;
-            }
-        }
+        Object val = VersionHelper.CURRENT.getArtMethodFieldNative(this, name);
         if (val == null) {
             val = get(getField(name));
         }
@@ -174,264 +125,22 @@ public class ArtMethod {
         return val;
     }
 
-    private long getLMR1Native(int num) {
-        long objectAddress = Unsafe.getObjectAddress(artMethod);
-        int intSize = Native.is64Bit() ? 8 : 4;
-        byte[] bytes = Memory.get(objectAddress + LMR1_MIRROR_FIELDS + intSize * num, intSize);
-        if (Native.is64Bit()) {
-            return ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN).getLong();
-        } else {
-            return ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN).getInt() & 0xFFFFFFFFL;
-        }
-    }
-
-    private long getMNative(int num, boolean mirror) {
-        long objectAddress = (long) artMethod;
-        int intSize = Native.is64Bit() && !mirror ? 8 : 4;
-        byte[] bytes = Memory.get(objectAddress + (mirror ? 0 : M_MIRROR_FIELDS) + intSize * num, intSize);
-        if (intSize == 8) {
-            return ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN).getLong();
-        } else {
-            return ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN).getInt() & 0xFFFFFFFFL;
-        }
-    }
-
     private void set(String name, Object value) {
         logd("Writing field: " + name + "=" + value + " from " + associatedMethod);
-        if (VERSION_LMR1) {
-            switch (name) {
-                case FIELD_ENTRY_POINT_FROM_INTERPRETER:
-                    setLMR1Native(FIELD_ENTRY_POINT_FROM_INTERPRETER_NATIVE_INDEX, (Long) value);
-                    return;
-                case FIELD_ENTRY_POINT_FROM_JNI:
-                    setLMR1Native(FIELD_ENTRY_POINT_FROM_JNI_NATIVE_INDEX, (Long) value);
-                    return;
-                case FIELD_ENTRY_POINT_FROM_QUICK_COMPILED_CODE:
-                    setLMR1Native(FIELD_ENTRY_POINT_FROM_QUICK_COMPILED_CODE_NATIVE_INDEX, (Long) value);
-                    return;
-            }
-        } else if (VERSION_M) {
-            switch (name) {
-                case FIELD_ENTRY_POINT_FROM_INTERPRETER:
-                    setMNative(FIELD_ENTRY_POINT_FROM_INTERPRETER_NATIVE_INDEX, (Long) value);
-                    return;
-                case FIELD_ENTRY_POINT_FROM_JNI:
-                    setMNative(FIELD_ENTRY_POINT_FROM_JNI_NATIVE_INDEX, (Long) value);
-                    return;
-                case FIELD_ENTRY_POINT_FROM_QUICK_COMPILED_CODE:
-                    setMNative(FIELD_ENTRY_POINT_FROM_QUICK_COMPILED_CODE_NATIVE_INDEX, (Long) value);
-                    return;
-                case FIELD_ACCESS_FLAGS:
-                    setMMirror(FIELD_ACCESS_FLAGS_MIRROR_INDEX, (int) value);
-                    break;
-            }
+        if (!VersionHelper.CURRENT.setArtMethodFieldNative(this, name, value)) {
+            set(getField(name), value);
         }
-        set(getField(name), value);
-    }
-
-    private void setLMR1Native(int num, long value) {
-        long objectAddress = Unsafe.getObjectAddress(artMethod);
-        int intSize = Native.is64Bit() ? 8 : 4;
-        byte[] bytes;
-        if (Native.is64Bit()) {
-            bytes = ByteBuffer.allocate(intSize).order(ByteOrder.LITTLE_ENDIAN).putLong(value).array();
-        } else {
-            bytes = ByteBuffer.allocate(intSize).order(ByteOrder.LITTLE_ENDIAN).putInt((int) value).array();
-        }
-        Memory.put(bytes, objectAddress + LMR1_MIRROR_FIELDS + intSize * num);
-    }
-
-    private void setMNative(int num, long value) {
-        long objectAddress = (long) artMethod;
-        int intSize = Native.is64Bit() ? 8 : 4;
-        byte[] bytes;
-        if (Native.is64Bit()) {
-            bytes = ByteBuffer.allocate(intSize).order(ByteOrder.LITTLE_ENDIAN).putLong(value).array();
-        } else {
-            bytes = ByteBuffer.allocate(intSize).order(ByteOrder.LITTLE_ENDIAN).putInt((int) value).array();
-        }
-        Memory.put(bytes, objectAddress + M_MIRROR_FIELDS + intSize * num);
-    }
-
-    private void setMMirror(int num, int value) {
-        byte[] bytes = ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN).putInt(value).array();
-        Memory.put(bytes, ((long) artMethod) + 4 * num);
     }
 
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneDoesntDeclareCloneNotSupportedException"})
     public ArtMethod clone() {
-        try {
-            ArtMethod clone = new ArtMethod();
-            if (VERSION_L) {
-                /*if (VERSION_LMR1) {
-                    long objectAddress = Unsafe.getObjectAddress(artMethod);
-                    long map = Memory.map(LMR1_OBJECT_SIZE);
-                    Memory.copy(objectAddress, map, LMR1_OBJECT_SIZE);
-                    try {
-                        long pointerOffset = Unsafe.objectFieldOffset(ArtMethod.class.getDeclaredField("artMethod"));
-                        Unsafe.putLong(clone, pointerOffset, map);
-                    } catch (NoSuchFieldException e) {
-                        DebugHelper.logw(e);
-                    }
-                }*/
-
-                // Copy fields of java.lang.reflect.ArtMethod (this.artMethod => clone.artMethod)
-                for (Field field : Class.forName(ART_METHOD_CLASS_NAME).getDeclaredFields()) {
-                    field.setAccessible(true);
-                    clone.set(field, get(field));
-                }
-                if (VERSION_LMR1) {
-                    clone.setEntryPointFromInterpreter(getEntryPointFromInterpreter());
-                    clone.setEntryPointFromJni(getEntryPointFromJni());
-                    clone.setEntryPointFromQuickCompiledCode(getEntryPointFromQuickCompiledCode());
-                }
-                clone.associatedMethod = newAssociatedMethodL(associatedMethod, clone.artMethod);
-            } else if (VERSION_M) {
-                Memory.copy((long) artMethod, (long) clone.artMethod, M_OBJECT_SIZE);
-                clone.associatedMethod = newAssociatedMethodM(associatedMethod, clone.artMethod);
-            }
-            return clone;
-        } catch (Exception e) {
-            throw new RuntimeException("Clone not supported", e);
-        }
+        ArtMethod clone = new ArtMethod();
+        VersionHelper.CURRENT.copy(this, clone);
+        return clone;
     }
 
-    /**
-     * Creates a new {@link java.lang.reflect.Constructor}/{@link java.lang.reflect.Method} object with the given {@link java.lang.reflect.ArtMethod}.
-     * <p/>
-     * <strong>Only available on Android L.</strong>
-     *
-     * @param associatedMethod The former associated method or constructor (only used to decide if we need a constructor or method).
-     * @param artMethod        The artMethod object (has to be of type {@link java.lang.reflect.ArtMethod}).
-     * @return The new constructor or method object.
-     */
-    private static Object newAssociatedMethodL(Object associatedMethod, Object artMethod) {
-        if (associatedMethod instanceof Method) {
-            return newMethodL(artMethod);
-        } else if (associatedMethod instanceof Constructor<?>) {
-            return newConstructorL(artMethod);
-        }
-        throw new IllegalArgumentException("associatedMethod has to be instance of Method or Constructor, was " + associatedMethod + ".");
-    }
-
-    /**
-     * Creates a new {@link java.lang.reflect.Method} object with the given {@link java.lang.reflect.ArtMethod}.
-     * <p/>
-     * <strong>Only available on Android L.</strong>
-     *
-     * @param artMethod The artMethod object (has to be of type {@link java.lang.reflect.ArtMethod}).
-     * @return The new method object.
-     */
-    private static Method newMethodL(Object artMethod) {
-        try {
-            Method m = Method.class.getConstructor(Class.forName(ART_METHOD_CLASS_NAME)).newInstance(artMethod);
-            m.setAccessible(true);
-            return m;
-        } catch (Throwable t) {
-            throw new RuntimeException("Can't create new Method.", t);
-        }
-    }
-
-    /**
-     * Creates a new {@link java.lang.reflect.Constructor} object with the given {@link java.lang.reflect.ArtMethod}.
-     * <p/>
-     * <strong>Only available on Android L.</strong>
-     *
-     * @param artMethod The artMethod object (has to be of type {@link java.lang.reflect.ArtMethod}).
-     * @return The new constructor object.
-     */
-    private static Constructor<?> newConstructorL(Object artMethod) {
-        try {
-            Constructor<?> c = Constructor.class.getConstructor(Class.forName(ART_METHOD_CLASS_NAME)).newInstance(artMethod);
-            c.setAccessible(true);
-            return c;
-        } catch (Throwable t) {
-            throw new RuntimeException("Can't create new Constructor.", t);
-        }
-    }
-
-    /**
-     * Creates a new {@link java.lang.reflect.Method}/{@link java.lang.reflect.Constructor} object with the given artMethod address.
-     * <p/>
-     * <strong>Only available on Android M.</strong>
-     *
-     * @param associatedMethod The associated method or constructor to copy.
-     * @param artMethod        The artMethod address (has to be of type {@link java.lang.Long}).
-     * @return The new method object.
-     */
-    private static Object newAssociatedMethodM(Object associatedMethod, Object artMethodAddr) {
-        if (associatedMethod instanceof Method) {
-            return newMethodM(associatedMethod, artMethodAddr);
-        } else if (associatedMethod instanceof Constructor<?>) {
-            return newConstructorM(associatedMethod, artMethodAddr);
-        }
-        throw new IllegalArgumentException("associatedMethod has to be instance of Method or Constructor, was " + associatedMethod + ".");
-    }
-
-    /**
-     * Creates a new {@link java.lang.reflect.Method} object with the given artMethod address.
-     * <p/>
-     * <strong>Only available on Android M.</strong>
-     *
-     * @param associatedMethod The associated method to copy.
-     * @param artMethod        The artMethod address (has to be of type {@link java.lang.Long}).
-     * @return The new method object.
-     */
-    private static Method newMethodM(Object associatedMethod, Object artMethodAddr) {
-        try {
-            // TODO
-            Constructor<Method> methodConstructor = Method.class.getDeclaredConstructor();
-            // we can't use methodConstructor.setAccessible(true); because Google does not like it
-            AccessibleObject.setAccessible(new AccessibleObject[]{methodConstructor}, true);
-
-            Method m = methodConstructor.newInstance();
-            m.setAccessible(true);
-            for (Field field : Class.forName(ABSTRACT_METHOD_CLASS_NAME).getDeclaredFields()) {
-                field.setAccessible(true);
-                field.set(m, field.get(associatedMethod));
-            }
-
-            Field artMethodField = Class.forName(ABSTRACT_METHOD_CLASS_NAME).getDeclaredField(FIELD_ART_METHOD);
-            artMethodField.setAccessible(true);
-            artMethodField.set(m, artMethodAddr);
-
-            return m;
-        } catch (Throwable t) {
-            throw new RuntimeException("Can't create new Method", t);
-        }
-    }
-
-    /**
-     * Creates a new {@link java.lang.reflect.Constructor} object with the given artMethod address.
-     * <p/>
-     * <strong>Only available on Android M.</strong>
-     *
-     * @param associatedMethod The associated constructor to copy.
-     * @param artMethod        The artMethod address (has to be of type {@link java.lang.Long}).
-     * @return The new constructor object.
-     */
-    private static Constructor<?> newConstructorM(Object associatedMethod, Object artMethodAddr) {
-        try {
-            // TODO
-            Constructor<Constructor> constructorConstructor = Constructor.class.getDeclaredConstructor();
-            // we can't use constructorConstructor.setAccessible(true); because Google does not like it
-            AccessibleObject.setAccessible(new AccessibleObject[]{constructorConstructor}, true);
-
-            Constructor<?> c = constructorConstructor.newInstance();
-            c.setAccessible(true);
-            for (Field field : Class.forName(ABSTRACT_METHOD_CLASS_NAME).getDeclaredFields()) {
-                field.setAccessible(true);
-                field.set(c, field.get(associatedMethod));
-            }
-
-            Field artMethodField = Class.forName(ABSTRACT_METHOD_CLASS_NAME).getDeclaredField(FIELD_ART_METHOD);
-            artMethodField.setAccessible(true);
-            artMethodField.set(c, artMethodAddr);
-
-            return c;
-        } catch (Throwable t) {
-            throw new RuntimeException("Can't create new Method", t);
-        }
+    public void convertToMethod() {
+        associatedMethod = VersionHelper.CURRENT.newMethod(associatedMethod, this);
     }
 
     public Object getAssociatedMethod() {
@@ -490,21 +199,21 @@ public class ArtMethod {
     public long getAddress() {
         if (VERSION_L) {
             return Unsafe.getObjectAddress(artMethod);
-        } else if (VERSION_M) {
+        } else if (VERSION_M_PLUS) {
             return (long) artMethod;
         } else {
             throw new RuntimeException("Not supported on your platform");
         }
     }
 
-    private void set(Field field, Object value) {
+    public void set(Field field, Object value) {
         if (VERSION_L) {
             try {
                 field.set(artMethod, value);
             } catch (IllegalAccessException e) {
                 throw new RuntimeException("Not supported on your platform", e);
             }
-        } else if (VERSION_M) {
+        } else if (VERSION_M_PLUS) {
             try {
                 field.set(associatedMethod, value);
             } catch (IllegalAccessException e) {
@@ -515,14 +224,14 @@ public class ArtMethod {
         }
     }
 
-    private Object get(Field field) {
+    public Object get(Field field) {
         if (VERSION_L) {
             try {
                 return field.get(artMethod);
             } catch (IllegalAccessException e) {
                 throw new RuntimeException("Not supported on your platform", e);
             }
-        } else if (VERSION_M) {
+        } else if (VERSION_M_PLUS) {
             try {
                 return field.get(associatedMethod);
             } catch (IllegalAccessException e) {
@@ -542,7 +251,7 @@ public class ArtMethod {
             } catch (Throwable e) {
                 throw new RuntimeException("Field " + name + " is not available on this system", e);
             }
-        } else if (VERSION_M) {
+        } else if (VERSION_M_PLUS) {
             try {
                 Field field = Class.forName(ABSTRACT_METHOD_CLASS_NAME).getDeclaredField(name);
                 field.setAccessible(true);

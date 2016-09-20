@@ -64,15 +64,22 @@ public class MyApplication extends Application {
     }
 
     @Hook("de.larma.arthook.test.MyApplication->pieceGame")
-    public void fix_pieceGame() {
+    public static void fix_pieceGame(MyApplication app) {
         Log.d(TAG, "fixed pieceGame()");
         madePiece = true;
+        OriginalMethod.by(new $() {}).invoke(app);
     }
 
     @Hook("android.net.sip.SipAudioCall->startAudio")
     public static void SipAudioCall_startAudio(SipAudioCall call) {
         Log.d(TAG, "SipAudioCall_startAudio");
         OriginalMethod.by(new $() {}).invoke(call);
+    }
+
+    @Hook("android.app.Activity-><init>")
+    public static void Activity_init(Activity a) {
+        Log.d(TAG, "Activity_init");
+        OriginalMethod.by(new $() {}).invoke(a);
     }
 
     /**
