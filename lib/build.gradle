@@ -22,6 +22,8 @@ android {
         versionCode 1
         versionName "1.0"
 
+        consumerProguardFiles 'proguard-rules.pro'
+
         ndk {
             moduleName "arthook_native"
             ldLibs "log"
