@@ -30,7 +30,7 @@ public class Thumb2 extends InstructionHelper {
 
     @Override
     public byte[] createDirectJump(long targetAddress) {
-        byte[] instructions = new byte[] {
+        final byte[] instructions = new byte[] {
                 (byte) 0xdf, (byte) 0xf8, 0x00, (byte) 0xf0,        // ldr pc, [pc]
                 0, 0, 0, 0
         };
@@ -45,22 +45,22 @@ public class Thumb2 extends InstructionHelper {
     }
 
     @Override
-    public byte[] createTargetJump(HookPage.Hook hook) {
-        byte[] instructions = new byte[] {
+    public byte[] createTargetJump(long targetAddress, long entryPointFromQuickCompiledCode, long srcAddress) {
+        final byte[] instructions = new byte[] {
                 (byte) 0xdf, (byte) 0xf8, 0x14, (byte) 0xc0,    // ldr ip, [pc, #20]
                 (byte) 0x60, 0x45,                              // cmp r0, ip
                 0x40, (byte) 0xf0, 0x09, (byte) 0x80,           // bne next
                 0x01, 0x48,                                     // ldr r0, [pc, #4]
                 (byte) 0xdf, (byte) 0xf8, 0x04, (byte) 0xf0,    // ldr pc, [pc, #4]
-                0x0, 0x0, 0x0, 0x0,                             // target_method_pos_x
-                0x0, 0x0, 0x0, 0x0,                             // target_method_pc
-                0x0, 0x0, 0x0, 0x0,                             // src_method_pos_x
+                0x0, 0x0, 0x0, 0x0,                             // targetAddress
+                0x0, 0x0, 0x0, 0x0,                             // entryPointFromQuickCompiledCode
+                0x0, 0x0, 0x0, 0x0,                             // srcAddress
         };
-        writeInt((int) hook.target.getAddress(), ByteOrder.LITTLE_ENDIAN, instructions,
+        writeInt((int) targetAddress, ByteOrder.LITTLE_ENDIAN, instructions,
                 instructions.length - 12);
-        writeInt((int) hook.target.getEntryPointFromQuickCompiledCode(),
+        writeInt((int) entryPointFromQuickCompiledCode,
                 ByteOrder.LITTLE_ENDIAN, instructions, instructions.length - 8);
-        writeInt((int) hook.src.getAddress(), ByteOrder.LITTLE_ENDIAN, instructions,
+        writeInt((int) srcAddress, ByteOrder.LITTLE_ENDIAN, instructions,
                 instructions.length - 4);
         return instructions;
     }
@@ -72,7 +72,7 @@ public class Thumb2 extends InstructionHelper {
 
     @Override
     public byte[] createArtJump(long artMethodAddress, long jumpTarget) {
-        byte[] instructions = new byte[] {
+        final byte[] instructions = new byte[] {
                 (byte) 0xdf, (byte) 0xf8, 0x04, 0x00,           // ldr r0, [pc, #4]
                 (byte) 0xdf, (byte) 0xf8, 0x04, (byte) 0xf0,    // ldr pc, [pc, #4]
                 0x0, 0x0, 0x0, 0x0,

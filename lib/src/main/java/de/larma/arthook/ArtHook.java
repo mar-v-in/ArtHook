@@ -16,12 +16,15 @@
 
 package de.larma.arthook;
 
+import android.util.Log;
+
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import de.larma.arthook.instrs.Arm32;
@@ -40,20 +43,37 @@ public final class ArtHook {
     }
 
     static {
-        try {
-            boolean isArm = true; // TODO: logic
-            if (isArm) {
-                if (Native.is64Bit()) {
-                    INSTRUCTION_SET_HELPER = new Arm64();
-                } else if ((ArtMethod.of(ArtMethod.class.getDeclaredMethod("of",
-                        Method.class)).getEntryPointFromQuickCompiledCode() & 1) == 1) {
-                    INSTRUCTION_SET_HELPER = new Thumb2();
-                } else {
+        final List<Arch> archs = Arch.getArchitectures();
+        for (Arch arch : archs) {
+            switch (arch) {
+                case ARM32:
                     INSTRUCTION_SET_HELPER = new Arm32();
-                }
+                    break;
+                case THUMB2:
+                    INSTRUCTION_SET_HELPER = new Thumb2();
+                    break;
+                case ARM64:
+                    INSTRUCTION_SET_HELPER = new Arm64();
+                    break;
+                case x86:
+                    // TODO: Support x86
+                    // INSTRUCTION_SET_HELPER = new X86();
+                    break;
+                case x86_64:
+                    // TODO: Support x86_64
+                    // INSTRUCTION_SET_HELPER = new X64();
+                    break;
             }
-            logd("Using: " + INSTRUCTION_SET_HELPER.getName());
-        } catch (Exception ignored) {
+
+            if (INSTRUCTION_SET_HELPER != null) {
+                break;
+            }
+        }
+
+        if (INSTRUCTION_SET_HELPER != null) {
+            Log.d("ArtHook", "Using: " + INSTRUCTION_SET_HELPER.getName());
+        } else {
+            throw new LibArtError("Instruction set not supported: " + archs);
         }
     }
 

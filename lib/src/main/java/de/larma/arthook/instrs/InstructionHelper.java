@@ -23,6 +23,24 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
 public abstract class InstructionHelper {
+
+    private final int sizeOfDirectJump;
+    private final int sizeOfTargetJump;
+
+    protected InstructionHelper() {
+        sizeOfDirectJump = createDirectJump(0).length;
+        sizeOfTargetJump = createTargetJump(0, 0, 0).length;
+    }
+
+    /**
+     * Length of DirectJump as created with {@link #createDirectJump(long)}
+     * <p/>
+     * This is ensured to be at least 8 bytes and always a multiple of 4
+     */
+    public int sizeOfDirectJump() {
+        return sizeOfDirectJump;
+    }
+
     /**
      * Create assembly corresponding to
      * <code>
@@ -31,13 +49,6 @@ public abstract class InstructionHelper {
      * </code>
      */
     public abstract byte[] createDirectJump(long targetAddress);
-
-    /**
-     * Length of DirectJump as created with {@link #createDirectJump(long)}
-     * <p/>
-     * This is ensured to be at least 8 bytes and always a multiple of 4
-     */
-    public abstract int sizeOfDirectJump();
 
     public abstract long toPC(long code);
 
@@ -68,19 +79,33 @@ public abstract class InstructionHelper {
         return sizeOfDirectJump() * 2;
     }
 
-    public abstract byte[] createTargetJump(HookPage.Hook hook);
+    public int sizeOfTargetJump() {
+        return sizeOfTargetJump;
+    }
 
-    public abstract int sizeOfTargetJump();
+    public abstract byte[] createTargetJump(long targetAddress, long entryPointFromQuickCompiledCode, long srcAddress);
 
+    public byte[] createTargetJump(HookPage.Hook hook) {
+        return createTargetJump(hook.target.getAddress(), hook.target.getEntryPointFromQuickCompiledCode(), hook.src.getAddress());
+    }
+
+    @Deprecated
+    public int sizeOfArtJump() {
+        return 0;
+    }
+
+    @Deprecated
+    public byte[] createArtJump(long artMethodAddress, long jumpTarget) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Deprecated
     public byte[] createArtJump(ArtMethod targetMethod, int offset) {
         return createArtJump(targetMethod.getAddress(),
                 targetMethod.getEntryPointFromQuickCompiledCode() + offset);
     }
 
-    public abstract int sizeOfArtJump();
-
-    public abstract byte[] createArtJump(long artMethodAddress, long jumpTarget);
-
+    @Deprecated
     public byte[] createArtJump(ArtMethod targetMethod) {
         return createArtJump(targetMethod, 0);
     }
@@ -92,6 +117,18 @@ public abstract class InstructionHelper {
 
     protected static void writeLong(long i, ByteOrder order, byte[] target, int pos) {
         System.arraycopy(ByteBuffer.allocate(8).order(order).putLong(i).array(), 0, target, pos, 8);
+    }
+
+    protected static String toHex(byte[] bytes) {
+        final char[] hexArray = "0123456789ABCDEF".toCharArray();
+        final StringBuilder builder = new StringBuilder();
+        for (byte aByte : bytes) {
+            int v = aByte & 0xFF;
+            builder.append(hexArray[v >>> 4]);
+            builder.append(hexArray[v & 0x0F]);
+            builder.append(' ');
+        }
+        return builder.toString();
     }
 
     public abstract String getName();

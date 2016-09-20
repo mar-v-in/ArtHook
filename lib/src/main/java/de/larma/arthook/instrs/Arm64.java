@@ -30,7 +30,7 @@ public class Arm64 extends InstructionHelper {
 
     @Override
     public byte[] createDirectJump(long targetAddress) {
-        byte[] instructions = new byte[] {
+        final byte[] instructions = new byte[] {
                 0x49, 0x00, 0x00, 0x58,         // ldr x9, _targetAddress
                 0x20, 0x01, 0x1F, (byte) 0xD6,  // br x9
                 0x00, 0x00, 0x00, 0x00,         // targetAddress
@@ -46,8 +46,8 @@ public class Arm64 extends InstructionHelper {
     }
 
     @Override
-    public byte[] createTargetJump(HookPage.Hook hook) {
-        byte[] instructions = new byte[] {
+    public byte[] createTargetJump(long targetAddress, long entryPointFromQuickCompiledCode, long srcAddress) {
+        final byte[] instructions = new byte[] {
                 0x49, 0x01, 0x00, 0x58,        // ldr x9, _src_method_pos_x
                 0x1F, 0x00, 0x09, (byte) 0xEB, // cmp x0, x9
                 0x41, 0x01, 0x00, 0x54,        // bne _branch_1
@@ -61,21 +61,10 @@ public class Arm64 extends InstructionHelper {
                 0x00, 0x00, 0x00, 0x00,        // src_method_pos_x
                 0x00, 0x00, 0x00, 0x00         // src_method_pos_x
         };
-        writeLong(hook.target.getAddress(), ByteOrder.LITTLE_ENDIAN, instructions, instructions.length - 24);
-        writeLong(hook.target.getEntryPointFromQuickCompiledCode(), ByteOrder.LITTLE_ENDIAN, instructions, instructions.length - 16);
-        writeLong(hook.src.getAddress(), ByteOrder.LITTLE_ENDIAN, instructions, instructions.length - 8);
+        writeLong(targetAddress, ByteOrder.LITTLE_ENDIAN, instructions, instructions.length - 24);
+        writeLong(entryPointFromQuickCompiledCode, ByteOrder.LITTLE_ENDIAN, instructions, instructions.length - 16);
+        writeLong(srcAddress, ByteOrder.LITTLE_ENDIAN, instructions, instructions.length - 8);
         return instructions;
-    }
-
-    @Override
-    public int sizeOfArtJump() {
-        return 28;
-    }
-
-    @Override
-    @Deprecated
-    public byte[] createArtJump(long artMethodAddress, long jumpTarget) {
-        throw new UnsupportedOperationException();
     }
 
     @Override
