@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static de.larma.arthook.ArtHook.findTargetMethod;
+import static de.larma.arthook.DebugHelper.logd;
 
 public class OriginalMethod {
     private static final String TAG = "ArtHook.OriginalMethod";
@@ -92,7 +93,7 @@ public class OriginalMethod {
                 for (Method method : cls.getDeclaredMethods()) {
                     if (method.getName().equals(element.getMethodName()) &&
                             method.isAnnotationPresent(Hook.class)) {
-                        Log.d(TAG, "Calling method hooked by " + method + " as original");
+                        logd(TAG, "Calling method hooked by " + method + " as original");
                         return byHook(method);
                     }
                 }

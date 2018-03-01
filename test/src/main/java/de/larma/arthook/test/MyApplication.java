@@ -56,7 +56,6 @@ public class MyApplication extends Application {
         } catch (Exception e) {
             Log.w(TAG, e);
         }
-
     }
 
     public void pieceGame() {

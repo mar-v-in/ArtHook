@@ -26,18 +26,18 @@ import static android.os.Build.VERSION_CODES.LOLLIPOP;
 import static android.os.Build.VERSION_CODES.LOLLIPOP_MR1;
 import static android.os.Build.VERSION_CODES.M;
 import static android.os.Build.VERSION_CODES.N;
+import static android.os.Build.VERSION_CODES.O;
 
 public abstract class VersionHelper {
-    protected static final String ART_METHOD_CLASS_NAME = "java.lang.reflect.ArtMethod";
-    protected static final String ABSTRACT_METHOD_CLASS_NAME = "java.lang.reflect.AbstractMethod";
-    protected static final String FIELD_ART_METHOD = "artMethod";
-
     private static final boolean VERSION_LMR0 = SDK_INT == LOLLIPOP;
     private static final boolean VERSION_LMR1 = SDK_INT == LOLLIPOP_MR1;
     private static final boolean VERSION_L = VERSION_LMR0 || VERSION_LMR1;
     private static final boolean VERSION_M = SDK_INT == M;
     private static final boolean VERSION_M_PLUS = SDK_INT >= M;
+    private static final boolean VERSION_N = SDK_INT == N;
     private static final boolean VERSION_N_PLUS = SDK_INT >= N;
+    private static final boolean VERSION_O = SDK_INT == O;
+    private static final boolean VERSION_O_PLUS = SDK_INT >= O;
 
     private static final boolean FALSE = false;
 
@@ -45,7 +45,8 @@ public abstract class VersionHelper {
             : VERSION_LMR0 ? new LMR0()
             : VERSION_LMR1 ? new LMR1()
             : VERSION_M ? new M()
-            : VERSION_N_PLUS ? new N()
+            : VERSION_N ? new N()
+            : VERSION_O_PLUS ? new O()
             : null;
 
     public abstract Object createArtMethod();

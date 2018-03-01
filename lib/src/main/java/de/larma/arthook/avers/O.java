@@ -28,25 +28,26 @@ import de.larma.arthook.Memory;
 import de.larma.arthook.Native;
 
 import static de.larma.arthook.ArtMethod.ABSTRACT_METHOD_CLASS_NAME;
+import static de.larma.arthook.ArtMethod.EXECUTABLE_CLASS_NAME;
 import static de.larma.arthook.ArtMethod.FIELD_ACCESS_FLAGS;
 import static de.larma.arthook.ArtMethod.FIELD_ART_METHOD;
 import static de.larma.arthook.ArtMethod.FIELD_ENTRY_POINT_FROM_JNI;
 import static de.larma.arthook.ArtMethod.FIELD_ENTRY_POINT_FROM_QUICK_COMPILED_CODE;
 
-public class N extends VersionHelper{
-    private static final int FIELD_ENTRY_POINT_FROM_JNI_NATIVE_INDEX = 2;
-    private static final int FIELD_ENTRY_POINT_FROM_QUICK_COMPILED_CODE_NATIVE_INDEX = 3;
+public class O extends VersionHelper{
+    private static final int FIELD_ENTRY_POINT_FROM_JNI_NATIVE_INDEX = 1;
+    private static final int FIELD_ENTRY_POINT_FROM_QUICK_COMPILED_CODE_NATIVE_INDEX = 2;
     private static final int FIELD_ACCESS_FLAGS_MIRROR_INDEX = 1;
 
-    private static final int N_MIRROR_FIELDS = Native.is64Bit() ? 24 : 20;
-    private static final int N_NATIVE_FIELDS_32 = 16;
-    private static final int N_NATIVE_FIELDS_64 = 32;
-    private static final int N_NATIVE_FIELDS = Native.is64Bit() ? N_NATIVE_FIELDS_64 : N_NATIVE_FIELDS_32;
-    private static final int N_OBJECT_SIZE = N_MIRROR_FIELDS + N_NATIVE_FIELDS;
+    private static final int O_MIRROR_FIELDS = Native.is64Bit() ? 24 : 20;
+    private static final int O_NATIVE_FIELDS_32 = 16;
+    private static final int O_NATIVE_FIELDS_64 = 32;
+    private static final int O_NATIVE_FIELDS = Native.is64Bit() ? O_NATIVE_FIELDS_64 : O_NATIVE_FIELDS_32;
+    private static final int O_OBJECT_SIZE = O_MIRROR_FIELDS + O_NATIVE_FIELDS;
 
     @Override
     public Object createArtMethod() {
-        return Memory.map(N_OBJECT_SIZE);
+        return Memory.map(O_OBJECT_SIZE);
     }
 
     @Override
@@ -63,7 +64,7 @@ public class N extends VersionHelper{
     private long getNative(ArtMethod artMethod, int num, boolean mirror) {
         long objectAddress = (long) artMethod.artMethod;
         int intSize = Native.is64Bit() && !mirror ? 8 : 4;
-        byte[] bytes = Memory.get(objectAddress + (mirror ? 0 : N_MIRROR_FIELDS) + intSize * num, intSize);
+        byte[] bytes = Memory.get(objectAddress + (mirror ? 0 : O_MIRROR_FIELDS) + intSize * num, intSize);
         if (intSize == 8) {
             return ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN).getLong();
         } else {
@@ -96,7 +97,7 @@ public class N extends VersionHelper{
         } else {
             bytes = ByteBuffer.allocate(intSize).order(ByteOrder.LITTLE_ENDIAN).putInt((int) value).array();
         }
-        Memory.put(bytes, objectAddress + N_MIRROR_FIELDS + intSize * num);
+        Memory.put(bytes, objectAddress + O_MIRROR_FIELDS + intSize * num);
     }
 
     private void setMirror(ArtMethod artMethod, int num, int value) {
@@ -117,12 +118,12 @@ public class N extends VersionHelper{
 
             Method m = methodConstructor.newInstance();
             m.setAccessible(true);
-            for (Field field : Class.forName(ABSTRACT_METHOD_CLASS_NAME).getDeclaredFields()) {
+            for (Field field : Class.forName(EXECUTABLE_CLASS_NAME).getDeclaredFields()) {
                 field.setAccessible(true);
                 field.set(m, field.get(associatedMethod));
             }
 
-            Field artMethodField = Class.forName(ABSTRACT_METHOD_CLASS_NAME).getDeclaredField(FIELD_ART_METHOD);
+            Field artMethodField = Class.forName(EXECUTABLE_CLASS_NAME).getDeclaredField(FIELD_ART_METHOD);
             artMethodField.setAccessible(true);
             artMethodField.set(m, newArtMethod.artMethod);
 
@@ -144,12 +145,12 @@ public class N extends VersionHelper{
 
             Constructor<?> c = constructorConstructor.newInstance();
             c.setAccessible(true);
-            for (Field field : Class.forName(ABSTRACT_METHOD_CLASS_NAME).getDeclaredFields()) {
+            for (Field field : Class.forName(EXECUTABLE_CLASS_NAME).getDeclaredFields()) {
                 field.setAccessible(true);
                 field.set(c, field.get(associatedMethod));
             }
 
-            Field artMethodField = Class.forName(ABSTRACT_METHOD_CLASS_NAME).getDeclaredField(FIELD_ART_METHOD);
+            Field artMethodField = Class.forName(EXECUTABLE_CLASS_NAME).getDeclaredField(FIELD_ART_METHOD);
             artMethodField.setAccessible(true);
             artMethodField.set(c, newArtMethod.artMethod);
 
@@ -161,7 +162,7 @@ public class N extends VersionHelper{
 
     @Override
     public void copy(ArtMethod src, ArtMethod dst) {
-        Memory.copy((long) src.artMethod, (long) dst.artMethod, N_OBJECT_SIZE);
+        Memory.copy((long) src.artMethod, (long) dst.artMethod, O_OBJECT_SIZE);
         dst.associatedMethod = newAssociatedMethod(src.associatedMethod, dst);
     }
 }

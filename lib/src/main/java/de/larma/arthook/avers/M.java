@@ -27,7 +27,9 @@ import de.larma.arthook.ArtMethod;
 import de.larma.arthook.Memory;
 import de.larma.arthook.Native;
 
+import static de.larma.arthook.ArtMethod.ABSTRACT_METHOD_CLASS_NAME;
 import static de.larma.arthook.ArtMethod.FIELD_ACCESS_FLAGS;
+import static de.larma.arthook.ArtMethod.FIELD_ART_METHOD;
 import static de.larma.arthook.ArtMethod.FIELD_ENTRY_POINT_FROM_INTERPRETER;
 import static de.larma.arthook.ArtMethod.FIELD_ENTRY_POINT_FROM_JNI;
 import static de.larma.arthook.ArtMethod.FIELD_ENTRY_POINT_FROM_QUICK_COMPILED_CODE;

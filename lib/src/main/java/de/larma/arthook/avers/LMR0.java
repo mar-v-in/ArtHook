@@ -22,6 +22,8 @@ import java.lang.reflect.Method;
 
 import de.larma.arthook.ArtMethod;
 
+import static de.larma.arthook.ArtMethod.ART_METHOD_CLASS_NAME;
+
 public class LMR0 extends VersionHelper {
     @Override
     public Object createArtMethod() {

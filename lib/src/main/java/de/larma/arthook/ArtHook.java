@@ -71,7 +71,7 @@ public final class ArtHook {
         }
 
         if (INSTRUCTION_SET_HELPER != null) {
-            Log.d("ArtHook", "Using: " + INSTRUCTION_SET_HELPER.getName());
+            logd("ArtHook", "Using: " + INSTRUCTION_SET_HELPER.getName());
         } else {
             throw new LibArtError("Instruction set not supported: " + archs);
         }

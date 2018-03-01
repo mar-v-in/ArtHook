@@ -41,9 +41,10 @@ import static de.larma.arthook.DebugHelper.logd;
  */
 @SuppressWarnings("JavadocReference")
 public class ArtMethod {
-    private static final String ART_METHOD_CLASS_NAME = "java.lang.reflect.ArtMethod";
-    private static final String ABSTRACT_METHOD_CLASS_NAME = "java.lang.reflect.AbstractMethod";
-    private static final String FIELD_ART_METHOD = "artMethod";
+    public static final String ART_METHOD_CLASS_NAME = "java.lang.reflect.ArtMethod";
+    public static final String ABSTRACT_METHOD_CLASS_NAME = "java.lang.reflect.AbstractMethod";
+    public static final String EXECUTABLE_CLASS_NAME = "java.lang.reflect.Executable";
+    public static final String FIELD_ART_METHOD = "artMethod";
 
     public static final String FIELD_ACCESS_FLAGS = "accessFlags";
     public static final String FIELD_DEX_METHOD_INDEX = "dexMethodIndex";
@@ -56,6 +57,18 @@ public class ArtMethod {
 
     public final Object artMethod;
     public Object associatedMethod;
+
+    private static Class abstractMethodClass;
+    static {
+        try {
+            abstractMethodClass = Class.forName(ABSTRACT_METHOD_CLASS_NAME);
+        } catch (ClassNotFoundException e) {
+            try {
+                abstractMethodClass = Class.forName(EXECUTABLE_CLASS_NAME);
+            } catch (ClassNotFoundException e2) {
+            }
+        }
+    }
 
     /**
      * Create a new ArtMethod.
@@ -107,8 +120,10 @@ public class ArtMethod {
     static ArtMethod of(Object method) {
         if (method == null)
             return null;
+        if (abstractMethodClass == null)
+            throw new RuntimeException("No abstract method class, is this a system running Art?");
         try {
-            Field artMethodField = Class.forName(ABSTRACT_METHOD_CLASS_NAME).getDeclaredField(FIELD_ART_METHOD);
+            Field artMethodField = abstractMethodClass.getDeclaredField(FIELD_ART_METHOD);
             artMethodField.setAccessible(true);
             return new ArtMethod(method, artMethodField.get(method));
         } catch (Throwable e) {
@@ -253,7 +268,7 @@ public class ArtMethod {
             }
         } else if (VERSION_M_PLUS) {
             try {
-                Field field = Class.forName(ABSTRACT_METHOD_CLASS_NAME).getDeclaredField(name);
+                Field field = abstractMethodClass.getDeclaredField(name);
                 field.setAccessible(true);
                 return field;
             } catch (Throwable e) {
