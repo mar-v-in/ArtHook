@@ -22,20 +22,15 @@ import java.lang.reflect.Method;
 import de.larma.arthook.ArtMethod;
 
 import static android.os.Build.VERSION.SDK_INT;
-import static android.os.Build.VERSION_CODES.LOLLIPOP;
-import static android.os.Build.VERSION_CODES.LOLLIPOP_MR1;
-import static android.os.Build.VERSION_CODES.M;
-import static android.os.Build.VERSION_CODES.N;
-import static android.os.Build.VERSION_CODES.O;
+import static android.os.Build.VERSION_CODES.*;
 
 public abstract class VersionHelper {
     private static final boolean VERSION_LMR0 = SDK_INT == LOLLIPOP;
     private static final boolean VERSION_LMR1 = SDK_INT == LOLLIPOP_MR1;
     private static final boolean VERSION_L = VERSION_LMR0 || VERSION_LMR1;
     private static final boolean VERSION_M = SDK_INT == M;
-    private static final boolean VERSION_M_PLUS = SDK_INT >= M;
     private static final boolean VERSION_N = SDK_INT == N;
-    private static final boolean VERSION_N_PLUS = SDK_INT >= N;
+    private static final boolean VERSION_N_PLUS = SDK_INT == N_MR1;
     private static final boolean VERSION_O = SDK_INT == O;
     private static final boolean VERSION_O_PLUS = SDK_INT >= O;
 
@@ -46,6 +41,8 @@ public abstract class VersionHelper {
             : VERSION_LMR1 ? new LMR1()
             : VERSION_M ? new M()
             : VERSION_N ? new N()
+            : VERSION_N_PLUS ? new N()
+            : VERSION_O ? new O()
             : VERSION_O_PLUS ? new O()
             : null;
 
